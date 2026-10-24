@@ -160,7 +160,7 @@ One JSON file per trip (strict JSON: no comments, no trailing commas), e.g. `tri
   "cameraOffsets": { "Canon EOS R6": "-00:02:30" },
   "videoTimesAreUtc": true,
   "images": { "thumbWidth": 400, "displayWidth": 1920, "quality": 50 },
-  "videos": { "maxShortSide": 720, "crf": 28, "preset": "medium", "audioBitrate": "128k" },
+  "videos": { "maxShortSide": 720, "crf": 44, "preset": 6, "audioBitrate": "128k" },
   "tracks_options": { "simplifyToleranceMeters": 5, "geotagToleranceMinutes": 2 }
 }
 ```
@@ -183,8 +183,8 @@ One JSON file per trip (strict JSON: no comments, no trailing commas), e.g. `tri
 | `images.displayWidth` | no | 1920 | The longest side is limited, for portrait images |
 | `images.quality` | no | 50 | AVIF quality |
 | `videos.maxShortSide` | no | 720 | The shorter side is limited (works for portrait videos) |
-| `videos.crf` | no | 28 | libx264 |
-| `videos.preset` | no | `medium` | |
+| `videos.crf`           | no       | 44 | SVT-AV1, 0–63, higher is smaller |
+| `videos.preset` | no | 6 | SVT-AV1, 0 (slowest, smallest) to 13 (fastest) |
 | `videos.audioBitrate` | no | `128k` | |
 | `tracks_options.simplifyToleranceMeters` | no | 5 | |
 | `tracks_options.geotagToleranceMinutes` | no | 2 | |
@@ -246,7 +246,7 @@ In order of priority:
 ### 8.4 Videos
 
 - Use `ffprobe` for duration, dimensions and rotation.
-- Transcode to H.264 (`libx264`, `yuv420p`) with AAC audio, scaling so the shorter side is at most `maxShortSide` (never upscale, keep even dimensions). Use `crf`, `preset` and `audioBitrate` from the config, add `-movflags +faststart`, and strip metadata (`-map_metadata -1`).
+- Transcode to AV1 (`libsvtav1`, `yuv420p`) with AAC audio, scaling so the shorter side is at most `maxShortSide` (never upscale, keep even dimensions). Use `crf`, `preset` and `audioBitrate` from the config, add `-movflags +faststart`, and strip metadata (`-map_metadata -1`).
 - Make a poster frame at 1 s (or the first frame for shorter videos), saved as an AVIF thumbnail and display image using the image settings.
 - Run images in parallel (CPU count) and videos at most 2 at a time.
 

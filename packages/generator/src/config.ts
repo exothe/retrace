@@ -26,7 +26,7 @@ export interface TripConfig {
   cameraOffsets: Record<string, number>;
   videoTimesAreUtc: boolean;
   images: { thumbWidth: number; displayWidth: number; quality: number };
-  videos: { maxShortSide: number; crf: number; preset: X264Preset; audioBitrate: string };
+  videos: { maxShortSide: number; crf: number; preset: number; audioBitrate: string };
   trackOptions: { simplifyToleranceMeters: number; geotagToleranceMinutes: number };
 }
 
@@ -35,20 +35,6 @@ export interface LoadConfigResult {
   config?: TripConfig;
   diagnostics: Diagnostic[];
 }
-
-const X264_PRESETS = [
-  "ultrafast",
-  "superfast",
-  "veryfast",
-  "faster",
-  "fast",
-  "medium",
-  "slow",
-  "slower",
-  "veryslow",
-  "placebo",
-] as const;
-export type X264Preset = (typeof X264_PRESETS)[number];
 
 const OFFSET = /^([+-])?(\d+):([0-5]\d)(?::([0-5]\d))?$/;
 
@@ -88,8 +74,12 @@ const schema = z.strictObject({
   videos: z
     .strictObject({
       maxShortSide: z.int().min(2).default(720),
-      crf: z.int().min(0).max(51).default(28),
-      preset: z.enum(X264_PRESETS).default("medium"),
+      crf: z.int().min(0).max(63).default(44),
+      preset: z
+        .int({ error: "must be an SVT-AV1 preset from 0 (slowest) to 13 (fastest)" })
+        .min(0)
+        .max(13)
+        .default(6),
       audioBitrate: z
         .string()
         .regex(/^\d+k$/, 'must be a bitrate like "128k"')

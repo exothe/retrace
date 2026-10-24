@@ -24,7 +24,7 @@ export function ffmpegInstallHint(platform: NodeJS.Platform = process.platform):
 }
 
 /**
- * Checks that ffmpeg (with libx264) and ffprobe can be run. Throws a ToolMissingError with an
+ * Checks that ffmpeg (with libsvtav1) and ffprobe can be run. Throws a ToolMissingError with an
  * install hint otherwise.
  */
 export async function checkFfmpeg(ffmpegPath: string, ffprobePath: string): Promise<void> {
@@ -41,9 +41,9 @@ export async function checkFfmpeg(ffmpegPath: string, ffprobePath: string): Prom
     }
   }
   const { stdout } = await runProcess(ffmpegPath, ["-hide_banner", "-encoders"]);
-  if (!/\blibx264\b/.test(stdout.toString("utf8"))) {
+  if (!/\blibsvtav1\b/.test(stdout.toString("utf8"))) {
     throw new ToolMissingError(
-      `ffmpeg (${ffmpegPath}) was built without libx264, which is needed for H.264 video. ` +
+      `ffmpeg (${ffmpegPath}) was built without libsvtav1, which is needed for AV1 video. ` +
         ffmpegInstallHint(),
     );
   }

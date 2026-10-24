@@ -6,7 +6,7 @@ import type { ImageInfo, ImageSettings } from "./images.ts";
 import { runProcess } from "./run.ts";
 
 /** Bump when video transcoding changes, so cached outputs are regenerated. */
-export const VIDEO_VERSION = 1;
+export const VIDEO_VERSION = 2;
 /** Bump when poster extraction changes. */
 export const POSTER_VERSION = 2;
 
@@ -19,7 +19,7 @@ export interface VideoInfo {
 }
 
 /**
- * Transcodes to H.264/AAC MP4 with the shorter side at most `maxShortSide`, `+faststart`, and
+ * Transcodes to AV1/AAC MP4 with the shorter side at most `maxShortSide`, `+faststart`, and
  * without metadata (SPEC section 8.4). ffmpeg applies the rotation itself (autorotate), so the
  * output is upright and the size is computed from the displayed dimensions.
  */
@@ -49,9 +49,9 @@ export async function transcodeVideo(
       "-vf",
       `scale=${width}:${height},setsar=1`,
       "-c:v",
-      "libx264",
+      "libsvtav1",
       "-preset",
-      settings.preset,
+      String(settings.preset),
       "-crf",
       String(settings.crf),
       "-pix_fmt",

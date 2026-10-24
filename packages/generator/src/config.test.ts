@@ -57,7 +57,7 @@ describe("loadConfig", () => {
       cameraOffsets: {},
       videoTimesAreUtc: true,
       images: { thumbWidth: 400, displayWidth: 1920, quality: 50 },
-      videos: { maxShortSide: 720, crf: 28, preset: "medium", audioBitrate: "128k" },
+      videos: { maxShortSide: 720, crf: 44, preset: 6, audioBitrate: "128k" },
       trackOptions: { simplifyToleranceMeters: 5, geotagToleranceMinutes: 2 },
     });
   });
@@ -74,7 +74,7 @@ describe("loadConfig", () => {
         cameraOffsets: { " Canon EOS R6 ": "-00:02:30", "Pixel 8": "+1:00" },
         videoTimesAreUtc: false,
         images: { thumbWidth: 300, quality: 80 },
-        videos: { maxShortSide: 1080, crf: 23, preset: "slow", audioBitrate: "96k" },
+        videos: { maxShortSide: 1080, crf: 30, preset: 4, audioBitrate: "96k" },
         tracks_options: { simplifyToleranceMeters: 10 },
       }),
     );
@@ -91,7 +91,7 @@ describe("loadConfig", () => {
       cameraOffsets: { "Canon EOS R6": -150, "Pixel 8": 3600 },
       videoTimesAreUtc: false,
       images: { thumbWidth: 300, displayWidth: 1920, quality: 80 },
-      videos: { maxShortSide: 1080, crf: 23, preset: "slow", audioBitrate: "96k" },
+      videos: { maxShortSide: 1080, crf: 30, preset: 4, audioBitrate: "96k" },
       trackOptions: { simplifyToleranceMeters: 10, geotagToleranceMinutes: 2 },
     });
   });
@@ -127,7 +127,7 @@ describe("loadConfig", () => {
       slug: "Lissabon 2026",
       timezone: "Europe/Lisboa",
       images: { quality: 101 },
-      videos: { preset: "turbo" },
+      videos: { preset: "medium" },
       cameraOffsets: { "Canon EOS R6": "2 minutes" },
       media: ["./Fotos", " "],
     });
@@ -140,7 +140,9 @@ describe("loadConfig", () => {
         new RegExp(`^${lineOf(text, '"quality"')}: error: images\\.quality: .*100`),
       ),
       expect.stringMatching(
-        new RegExp(`^${lineOf(text, '"preset"')}: error: videos\\.preset: .*"medium"`),
+        new RegExp(
+          `^${lineOf(text, '"preset"')}: error: videos\\.preset: must be an SVT-AV1 preset from 0 \\(slowest\\) to 13 \\(fastest\\)$`,
+        ),
       ),
       `${lineOf(text, '"Canon EOS R6"')}: error: cameraOffsets."Canon EOS R6": must be an offset like "-00:02:30"`,
     ]);

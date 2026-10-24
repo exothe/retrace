@@ -95,6 +95,16 @@ describe.runIf(hasFfmpeg)("build (end to end, sample trip)", () => {
     );
     expect(onDisk.sort()).toEqual(referenced.sort());
 
+    // Videos are AV1, images AVIF.
+    for (const file of onDisk.filter((f) => f.endsWith(".mp4"))) {
+      const { stdout } = await promisify(execFile)("ffprobe", [
+        ...["-v", "error", "-show_entries", "stream=codec_name", "-of", "csv=p=0"],
+        path.join(site, "trips/lissabon-2026", file),
+      ]);
+      expect(stdout.split(/\r?\n/).filter(Boolean).sort()).toEqual(["aac", "av1"]);
+    }
+    expect(onDisk.filter((f) => !f.endsWith(".mp4")).every((f) => f.endsWith(".avif"))).toBe(true);
+
     const index = JSON.parse(
       await readFile(path.join(site, "trips/index.json"), "utf8"),
     ) as TripIndex;

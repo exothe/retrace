@@ -45,6 +45,11 @@ unpack it, and either add its `bin` folder to `PATH` or point the trip config at
 Check it with `ffmpeg -version`. `retrace build` checks it too and prints these hints if
 ffmpeg is missing. exiftool is bundled, so nothing else needs to be installed.
 
+Videos are encoded as AV1, so ffmpeg needs the SVT-AV1 encoder: `ffmpeg -encoders` must list
+`libsvtav1`. The Homebrew and gyan.dev builds include it, as do the packages of current Linux
+distributions (e.g. Debian 12, Ubuntu 24.04). AV1 plays in current Chrome, Edge and Firefox, but
+in Safari only on devices with AV1 hardware decoding (iPhone 15 Pro, M3 Macs and newer).
+
 ### Install Retrace
 
 ```sh
