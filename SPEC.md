@@ -66,7 +66,7 @@ Command name: `retrace`.
 | `retrace check <config.json>` | Validate config and notes, and print the report (section 5.4). Reads media metadata to report media-related warnings, but processes and writes nothing. |
 | `retrace build <config.json>` | Full run: validate, process media and tracks (cached), write the trip folder, copy the viewer, rebuild `trips/index.json`. |
 | `retrace index <siteDir>` | Rebuild `trips/index.json` from all `trips/*/trip.json` in the site directory. `build` does this automatically. |
-| `retrace preview [siteDir]` | Serve the site directory locally (default port 4173) for checking before copying to the Pi. |
+| `retrace preview [siteDir]` | Serve the site directory locally (default port 4173) for checking before copying to the Pi. `--port <port>` sets the port; `--host [host]` makes it reachable from other devices in the network (default `0.0.0.0` when given), e.g. to test on a phone. |
 
 Flags: `--strict` (warnings fail the run, for both `check` and `build`), `--verbose`, `--no-cache` (reprocess everything).
 

@@ -15,7 +15,7 @@ export function useTempDir() {
   return async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), "retrace-test-"));
     dirs.push(dir);
-    const write = async (relative: string, content = "") => {
+    const write = async (relative: string, content: string | Uint8Array = "") => {
       const file = path.join(dir, relative);
       await mkdir(path.dirname(file), { recursive: true });
       await writeFile(file, content);

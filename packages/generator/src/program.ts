@@ -1,8 +1,9 @@
 import { createRequire } from "node:module";
-import { Command } from "commander";
+import { Command, InvalidArgumentError } from "commander";
 import { runBuild } from "./commands/build.ts";
 import { runCheck } from "./commands/check.ts";
 import { runIndex } from "./commands/index-command.ts";
+import { DEFAULT_PORT, runPreview } from "./commands/preview.ts";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
@@ -51,5 +52,30 @@ export function createProgram(): Command {
       process.exitCode = await runIndex(siteDir, options);
     });
 
+  program
+    .command("preview")
+    .description("Serve a site directory locally, to check it before copying it to the server")
+    .argument("[siteDir]", "site directory", ".")
+    .option("--port <port>", "port to listen on", (v) => parsePort(v), DEFAULT_PORT)
+    .option(
+      "--host [host]",
+      "make the preview reachable from other devices in the network (default when given: 0.0.0.0)",
+    )
+    .action(async (siteDir: string, options: { port: number; host?: string | true }) => {
+      const host = options.host === true ? "0.0.0.0" : options.host;
+      process.exitCode = await runPreview(siteDir, {
+        port: options.port,
+        ...(host !== undefined && { host }),
+      });
+    });
+
   return program;
+}
+
+function parsePort(value: string): number {
+  const port = Number(value);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    throw new InvalidArgumentError("must be a port number (0–65535)");
+  }
+  return port;
 }
