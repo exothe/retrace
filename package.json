@@ -5,7 +5,8 @@
   "workspaces": [
     "packages/shared",
     "packages/generator",
-    "packages/viewer"
+    "packages/viewer",
+    "examples"
   ],
   "engines": {
     "node": ">=22.12.0"
@@ -17,7 +18,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "examples:generate": "npm run generate -w examples"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

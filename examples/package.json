@@ -1,0 +1,19 @@
+{
+  "name": "examples",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sample trip for development and tests; generates its test media",
+  "type": "module",
+  "scripts": {
+    "generate": "node scripts/generate-media.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "exiftool-vendored": "39.0.1",
+    "luxon": "3.7.2",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@types/luxon": "3.7.6"
+  }
+}

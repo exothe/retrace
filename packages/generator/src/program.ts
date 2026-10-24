@@ -18,9 +18,15 @@ export function createProgram(): Command {
     .argument("<config.json>", "trip config file")
     .option("--strict", "treat warnings as errors")
     .option("--verbose", "print more details")
-    .action(async (configFile: string, options: { strict?: boolean; verbose?: boolean }) => {
-      process.exitCode = await runCheck(configFile, options);
-    });
+    .option("--no-cache", "ignore cached metadata and re-read everything")
+    .action(
+      async (
+        configFile: string,
+        options: { strict?: boolean; verbose?: boolean; cache: boolean },
+      ) => {
+        process.exitCode = await runCheck(configFile, options);
+      },
+    );
 
   return program;
 }

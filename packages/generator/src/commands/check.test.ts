@@ -26,7 +26,11 @@ async function run(notes: string, options: { strict?: boolean; config?: string }
   await write("trip/Lissabon 2026.md", notes);
   const configFile = await write("trip/trip.json", options.config ?? CONFIG);
   const lines: string[] = [];
-  const code = await runCheck(configFile, options, { log: (line) => lines.push(line) });
+  const code = await runCheck(
+    configFile,
+    { ...options, reader: { read: async () => ({}), close: async () => {} } },
+    { log: (line) => lines.push(line), progress: () => {} },
+  );
   // Paths depend on the temp folder; keep only the file name for assertions.
   const prefix = displayPath(path.join(dir, "trip")) + path.sep;
   return { code, lines: lines.map((line) => line.replace(prefix, "")) };
@@ -36,7 +40,11 @@ describe("runCheck", () => {
   it("succeeds for valid notes and prints a summary", async () => {
     expect(await run("# Verlauf\n## 23.10.2026 (Fr)\n* [08:00] Aufgewacht\n")).toEqual({
       code: ExitCode.Success,
-      lines: ["Notes: 1 day, 1 entry", "0 errors, 0 warnings"],
+      lines: [
+        "Notes: 1 day, 1 entry",
+        "Media: 0 photos, 0 videos, 0 tracks",
+        "0 errors, 0 warnings",
+      ],
     });
   });
 
@@ -45,6 +53,7 @@ describe("runCheck", () => {
       code: ExitCode.ValidationError,
       lines: [
         "Notes: 1 day, 0 entries",
+        "Media: 0 photos, 0 videos, 0 tracks",
         "Lissabon 2026.md:2: error: entry before the first day heading (missing day heading?)",
         "Lissabon 2026.md:3: warning: day 23.10.2026 has no entries",
         "Lissabon 2026.md:4: error: invalid time [25:00]",
