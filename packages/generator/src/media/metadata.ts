@@ -1,6 +1,10 @@
+import { randomUUID } from "node:crypto";
+import { readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
+import path from "node:path";
 import { ExifTool } from "exiftool-vendored";
 import type { MediaKind } from "./discover.ts";
+import { expandJxlBoxes } from "./jxl.ts";
 
 /**
  * The metadata tags Retrace uses, as raw strings from exiftool (cached by content hash).
@@ -64,8 +68,21 @@ export function createMetadataReader(): MetadataReader {
     async read(file, kind) {
       // -fast stops reading JPEGs at the image data; videos may keep metadata at the end.
       const readArgs = [...(kind === "photo" ? ["-fast"] : []), "-G", ...READ_ARGS];
-      const raw = (await exiftool.readRaw(file, { readArgs })) as Record<string, unknown>;
-      return toRawMetadata(raw);
+      const readRaw = async (target: string) =>
+        toRawMetadata((await exiftool.readRaw(target, { readArgs })) as Record<string, unknown>);
+      const expanded =
+        path.extname(file).toLowerCase() === ".jxl"
+          ? expandJxlBoxes(await readFile(file))
+          : undefined;
+      if (!expanded) return readRaw(file);
+      // exiftool can't read compressed JPEG XL metadata; give it a copy with plain boxes.
+      const temp = path.join(os.tmpdir(), `retrace-${randomUUID()}.jxl`);
+      try {
+        await writeFile(temp, expanded);
+        return await readRaw(temp);
+      } finally {
+        await rm(temp, { force: true });
+      }
     },
     close: () => exiftool.end(),
   };

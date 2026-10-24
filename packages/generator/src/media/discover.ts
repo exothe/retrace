@@ -18,7 +18,7 @@ export interface Discovery {
   unsupported: string[];
 }
 
-const PHOTO_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+const PHOTO_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".jxl"]);
 const VIDEO_EXTENSIONS = new Set([".mp4", ".mov", ".m4v", ".3gp", ".mkv"]);
 const TRACK_EXTENSIONS = new Set([".fit"]);
 const IGNORED_NAMES = new Set(["thumbs.db", "desktop.ini"]);

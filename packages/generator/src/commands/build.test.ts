@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { generateSampleMedia } from "../../../../examples/scripts/generate-media.ts";
 import { ExitCode } from "../exit-codes.ts";
 import { silentOutput } from "../output.ts";
+import { hasJxlTools, writeJxl } from "../test/media-files.ts";
 import { useTempDir } from "../test/temp-dir.ts";
 import { runBuild } from "./build.ts";
 import { runIndex } from "./index-command.ts";
@@ -147,6 +148,32 @@ describe.runIf(hasFfmpeg)("build (end to end, sample trip)", () => {
     expect(files.filter((f) => f.endsWith(".mp4"))).toHaveLength(2);
     expect(files).toHaveLength(6);
   }, 120_000);
+
+  it.runIf(hasJxlTools)(
+    "converts JPEG XL photos, and stops if djxl is missing",
+    async () => {
+      const { dir, configFile, site, lines, build } = await setup();
+      const jxl = await writeJxl(path.join(dir, "Mehr", "IMG_20261024_123456.jxl"), {
+        DateTimeOriginal: "2026:10:24 12:34:56",
+      });
+      const config = JSON.parse(await readFile(configFile, "utf8")) as Record<string, unknown>;
+      config.media = [...(config.media as string[]), path.dirname(jxl)];
+      await writeFile(configFile, JSON.stringify({ ...config, djxlPath: "retrace-no-such-djxl" }));
+      expect(await build()).toBe(ExitCode.RuntimeError);
+      expect(lines.at(-1)).toMatch(/^error: djxl \(retrace-no-such-djxl\): not found\. /);
+      await expect(stat(site)).rejects.toThrow();
+
+      await writeFile(configFile, JSON.stringify(config));
+      expect(await build()).toBe(ExitCode.Success);
+      expect(lines.at(-1)).toMatch(/ 11 photos, 2 videos, 1 track, 3 warnings, /);
+      const trip = JSON.parse(
+        await readFile(path.join(site, "trips/lissabon-2026/trip.json"), "utf8"),
+      ) as Trip;
+      const photo = Object.values(trip.media).find((m) => m.localTime === "12:34");
+      expect(photo).toMatchObject({ type: "photo", width: 64, height: 48 });
+    },
+    120_000,
+  );
 
   it("rebuilds index.json with retrace index", async () => {
     const { site, build } = await setup();

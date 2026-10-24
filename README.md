@@ -50,6 +50,11 @@ Videos are encoded as AV1, so ffmpeg needs the SVT-AV1 encoder: `ffmpeg -encoder
 distributions (e.g. Debian 12, Ubuntu 24.04). AV1 plays in current Chrome, Edge and Firefox, but
 in Safari only on devices with AV1 hardware decoding (iPhone 15 Pro, M3 Macs and newer).
 
+For JPEG XL photos (`.jxl`), Retrace also needs `djxl` from libjxl: `brew install jpeg-xl` on
+macOS, `sudo apt install libjxl-tools` on Linux, or on Windows `djxl.exe` from
+`jxl-x64-windows-static.zip` at https://github.com/libjxl/libjxl/releases, set as `"djxlPath"`
+in the trip config. Trips without JPEG XL photos don't need it.
+
 ### Install Retrace
 
 ```sh

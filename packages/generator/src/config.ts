@@ -22,6 +22,8 @@ export interface TripConfig {
   /** Absolute path, or a bare command name looked up on PATH */
   ffmpegPath: string;
   ffprobePath: string;
+  /** Decodes JPEG XL photos; only needed when the trip has some */
+  djxlPath: string;
   /** Clock correction in seconds, keyed by trimmed "<Make> <Model>" or "<Model>" */
   cameraOffsets: Record<string, number>;
   videoTimesAreUtc: boolean;
@@ -60,6 +62,7 @@ const schema = z.strictObject({
   cacheDir: nonEmpty.optional(),
   ffmpegPath: nonEmpty.optional(),
   ffprobePath: nonEmpty.optional(),
+  djxlPath: nonEmpty.optional(),
   cameraOffsets: z
     .record(z.string(), z.string().regex(OFFSET, 'must be an offset like "-00:02:30"'))
     .optional(),
@@ -178,6 +181,7 @@ function resolveConfig(file: string, raw: RawConfig): TripConfig {
     cacheDir: raw.cacheDir === undefined ? defaultCacheDir() : resolve(raw.cacheDir),
     ffmpegPath: resolveCommand(raw.ffmpegPath, "ffmpeg"),
     ffprobePath: resolveCommand(raw.ffprobePath, "ffprobe"),
+    djxlPath: resolveCommand(raw.djxlPath, "djxl"),
     cameraOffsets: Object.fromEntries(
       Object.entries(raw.cameraOffsets ?? {}).map(([camera, offset]) => [
         camera.trim(),

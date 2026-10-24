@@ -45,6 +45,7 @@ General: Node.js current LTS (22 or newer), TypeScript in strict mode, ESM throu
 - `exiftool-vendored` for photo and video metadata
 - `@garmin/fitsdk` (Garmin's official FIT SDK) for FIT parsing
 - `ffmpeg` and `ffprobe` invoked directly via `child_process` (do not use `fluent-ffmpeg`, which is no longer maintained). They must be on `PATH` or set via config.
+- `djxl` (libjxl) invoked the same way to decode JPEG XL photos, because sharp's prebuilt libvips can't read JPEG XL. Only needed when a trip has `.jxl` files.
 - `env-paths` for the default cache directory
 - `sirv` for the preview server (it supports range requests, which video seeking needs)
 
@@ -72,7 +73,7 @@ Flags: `--strict` (warnings fail the run, for both `check` and `build`), `--verb
 
 Exit codes: 0 on success, 1 on validation errors, 2 on runtime failures (e.g. ffmpeg missing).
 
-At startup, `build` checks that `ffmpeg` and `ffprobe` are available and prints a clear install hint per OS if they aren't.
+At startup, `build` checks that `ffmpeg` and `ffprobe` are available and prints a clear install hint per OS if they aren't. If the trip has JPEG XL photos, it checks `djxl` the same way after validation, before writing anything.
 
 Show progress for media processing (counts and current file). Print a summary at the end: days, entries, photos, videos, tracks, warnings, output size of the trip folder.
 
@@ -177,6 +178,7 @@ One JSON file per trip (strict JSON: no comments, no trailing commas), e.g. `tri
 | `cover` | no | first photo | File name of the cover photo |
 | `cacheDir` | no | OS cache dir from `env-paths("retrace")` | |
 | `ffmpegPath`, `ffprobePath` | no | `ffmpeg`, `ffprobe` on `PATH` | |
+| `djxlPath` | no | `djxl` on `PATH` | Only used for JPEG XL photos |
 | `cameraOffsets` | no | | Clock corrections added to the media timestamp; the key matches `"<Make> <Model>"` or `"<Model>"` from EXIF |
 | `videoTimesAreUtc` | no | `true` | Section 7.2 |
 | `images.thumbWidth` | no | 400 | |
@@ -226,7 +228,7 @@ In order of priority:
 ### 8.1 Discovery
 
 - Scan the `media` and `tracks` entries. Folders are scanned recursively.
-- Images: `.jpg .jpeg .png .webp`. Videos: `.mp4 .mov .m4v .3gp .mkv`. Tracks: `.fit`. Extensions are case-insensitive.
+- Images: `.jpg .jpeg .png .webp .jxl`. Videos: `.mp4 .mov .m4v .3gp .mkv`. Tracks: `.fit`. Extensions are case-insensitive.
 - Ignore hidden files, `.trashed-*` files, `Thumbs.db`, `.DS_Store`, and anything inside folders named `.thumbnails`.
 - Unsupported files are listed once in the summary, not individually.
 
@@ -239,6 +241,7 @@ In order of priority:
 
 ### 8.3 Images
 
+- JPEG XL: decode with `djxl` to PNG first (single-threaded, as images are processed in parallel). The PNG keeps the ICC profile and is already upright, since djxl applies the orientation. Metadata in Brotli-compressed `brob` boxes is decompressed before exiftool reads it, because the bundled exiftool can't.
 - Auto-rotate according to EXIF orientation (`sharp().rotate()`), then strip all metadata from the output (sharp's default).
 - Output a thumbnail (width `thumbWidth`) and a display version (longest side `displayWidth`) as AVIF at `quality`. Never upscale.
 - Record the output dimensions and a dominant color (via `sharp().stats()`) as a placeholder background.

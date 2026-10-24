@@ -3,7 +3,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { afterAll, describe, expect, it } from "vitest";
 import { useTempDir } from "../test/temp-dir.ts";
-import { writePhoto } from "../test/media-files.ts";
+import { hasJxlTools, writeJxl, writePhoto } from "../test/media-files.ts";
 import { createMetadataReader, toRawMetadata } from "./metadata.ts";
 
 const tempDir = useTempDir();
@@ -76,6 +76,28 @@ describe("createMetadataReader (real exiftool)", () => {
       dateTimeOriginal: "2026:10:23 09:15:12",
       offsetTimeOriginal: "+01:00",
     });
+  });
+
+  it.runIf(hasJxlTools)("reads JPEG XL metadata, also when it is Brotli-compressed", async () => {
+    const { dir } = await tempDir();
+    const tags = {
+      Model: "Pixel 8",
+      DateTimeOriginal: "2026:10:23 09:15:12",
+      OffsetTimeOriginal: "+01:00",
+      GPSLatitude: 38.7114,
+      GPSLongitude: -9.1305,
+    };
+    const expected = {
+      dateTimeOriginal: "2026:10:23 09:15:12",
+      offsetTimeOriginal: "+01:00",
+      model: "Pixel 8",
+      gpsLatitude: 38.7114,
+      gpsLongitude: -9.1305,
+    };
+    const compressed = await writeJxl(path.join(dir, "a.jxl"), tags);
+    const plain = await writeJxl(path.join(dir, "b.JXL"), tags, false);
+    expect(await reader.read(compressed, "photo")).toEqual(expected);
+    expect(await reader.read(plain, "photo")).toEqual(expected);
   });
 
   it("returns an empty result for a photo without metadata", async () => {

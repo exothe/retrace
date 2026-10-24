@@ -1,3 +1,4 @@
+import path from "node:path";
 import { loadConfig } from "../config.ts";
 import { displayPath, isFailure } from "../diagnostics.ts";
 import type { Diagnostic } from "../diagnostics.ts";
@@ -5,6 +6,7 @@ import { ExitCode } from "../exit-codes.ts";
 import type { MetadataReader } from "../media/metadata.ts";
 import { consoleOutput } from "../output.ts";
 import type { Output } from "../output.ts";
+import { checkDjxl } from "../process/djxl.ts";
 import { ToolMissingError, checkFfmpeg } from "../process/ffmpeg.ts";
 import { folderSize, processMedia } from "../process/process-media.ts";
 import { rebuildIndex } from "../site/index-json.ts";
@@ -82,6 +84,16 @@ export async function runBuild(
     printCounts(out, diagnostics, strict);
     out.log("Build stopped, nothing was written.");
     return ExitCode.ValidationError;
+  }
+
+  if (validation.scan.media.some((item) => path.extname(item.path).toLowerCase() === ".jxl")) {
+    try {
+      await checkDjxl(config.djxlPath);
+    } catch (error) {
+      if (!(error instanceof ToolMissingError)) throw error;
+      out.log(`error: ${error.message}`);
+      return ExitCode.RuntimeError;
+    }
   }
 
   const result = await processMedia(validation.scan.media, config, validation.cache, out);

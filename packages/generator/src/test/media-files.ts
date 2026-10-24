@@ -1,5 +1,7 @@
-import { mkdir } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
+import { promisify } from "node:util";
 import { ExifTool } from "exiftool-vendored";
 import type { WriteTags } from "exiftool-vendored";
 import sharp from "sharp";
@@ -17,5 +19,31 @@ export async function writePhoto(file: string, tags: WriteTags = {}, color = "#c
       await exiftool.end();
     }
   }
+  return file;
+}
+
+/** Whether libjxl's cjxl and djxl are installed, for JPEG XL tests. */
+export const hasJxlTools = await Promise.all(
+  ["cjxl", "djxl"].map((command) => promisify(execFile)(command, ["--version"])),
+).then(
+  () => true,
+  () => false,
+);
+
+/**
+ * Writes a small JPEG XL photo (64x48) with the given EXIF tags via cjxl, which stores them
+ * Brotli-compressed ("brob" boxes) unless `compressBoxes` is false.
+ */
+export async function writeJxl(file: string, tags: WriteTags = {}, compressBoxes = true) {
+  const jpeg = await writePhoto(`${file}.jpg`, tags);
+  await promisify(execFile)("cjxl", [
+    jpeg,
+    file,
+    "--lossless_jpeg=0",
+    "--distance=1",
+    `--compress_boxes=${compressBoxes ? 1 : 0}`,
+    "--quiet",
+  ]);
+  await rm(jpeg);
   return file;
 }

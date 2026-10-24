@@ -10,6 +10,7 @@ import type { TripConfig } from "../config.ts";
 import type { Diagnostic } from "../diagnostics.ts";
 import type { MediaItem } from "../media/scan.ts";
 import type { Output } from "../output.ts";
+import { decodeJxl } from "./djxl.ts";
 import { IMAGE_VERSION, renderImage } from "./images.ts";
 import type { ImageInfo } from "./images.ts";
 import { POSTER_VERSION, VIDEO_VERSION, extractPoster, transcodeVideo } from "./videos.ts";
@@ -79,7 +80,7 @@ export async function processMedia(
       const { dir, info, fresh } = await cached<ImageInfo>(
         cacheEntry(cache, item.hash, imageKey),
         cache.enabled,
-        (temp) => renderImage(item.path, config.images, temp),
+        (temp) => renderPhoto(item.path, config, temp),
       );
       stats[fresh ? "processed" : "cached"]++;
       return {
@@ -145,6 +146,17 @@ export async function processMedia(
   );
   const processed = items.flatMap((item) => byId.get(item.id) ?? []);
   return { processed, diagnostics, stats };
+}
+
+/** Renders a photo into `dir`; JPEG XL goes through djxl first (SPEC section 8.3). */
+async function renderPhoto(file: string, config: TripConfig, dir: string): Promise<ImageInfo> {
+  if (path.extname(file).toLowerCase() !== ".jxl") return renderImage(file, config.images, dir);
+  const decoded = path.join(dir, "decoded.png");
+  await decodeJxl(config.djxlPath, file, decoded);
+  // A buffer, so sharp holds no file handle and the file can be removed on Windows too.
+  const data = await readFile(decoded);
+  await rm(decoded);
+  return renderImage(data, config.images, dir);
 }
 
 function cacheEntry(cache: Cache, hash: string, key: string): string {
