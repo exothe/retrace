@@ -1,12 +1,13 @@
 // Generates the test media for the sample trip (SPEC section 12) into examples/generated/,
 // which is git-ignored. Each file exercises one rule of timestamp resolution (SPEC section 7)
-// or discovery (SPEC section 8.1); see the comments in PHOTOS and VIDEOS.
+// or discovery (SPEC section 8.1); see the comments in PHOTOS and VIDEOS_SPEC.
 //
 // Requires ffmpeg on PATH (or FFMPEG_PATH). Run with `npm run examples:generate`.
 
 import { execFile } from "node:child_process";
 import { copyFile, mkdir, rm, utimes, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { ExifTool } from "exiftool-vendored";
 import type { WriteTags } from "exiftool-vendored";
@@ -15,9 +16,8 @@ import sharp from "sharp";
 const run = promisify(execFile);
 const ffmpeg = process.env.FFMPEG_PATH ?? "ffmpeg";
 
-const OUT = path.resolve(import.meta.dirname, "..", "generated", "lissabon-2026");
-const FOTOS = path.join(OUT, "Fotos");
-const VIDEOS = path.join(OUT, "Videos");
+/** Default output folder; the trip config in examples/lissabon-2026 points here. */
+export const DEFAULT_OUT = path.resolve(import.meta.dirname, "..", "generated", "lissabon-2026");
 
 const ALFAMA = { lat: 38.7114, lon: -9.1305 };
 const SINTRA = { lat: 38.7876, lon: -9.3906 };
@@ -162,8 +162,8 @@ function labelSvg(width: number, height: number, label: string): Buffer {
   );
 }
 
-async function makePhoto(exiftool: ExifTool, spec: PhotoSpec): Promise<string> {
-  const file = path.join(FOTOS, spec.file);
+async function makePhoto(exiftool: ExifTool, fotos: string, spec: PhotoSpec): Promise<string> {
+  const file = path.join(fotos, spec.file);
   await mkdir(path.dirname(file), { recursive: true });
   const width = spec.width ?? 1600;
   const height = spec.height ?? 1200;
@@ -195,8 +195,8 @@ function iso6709({ lat, lon }: { lat: number; lon: number }): string {
   return `${fmt(lat, 2)}${fmt(lon, 3)}/`;
 }
 
-async function makeVideo(spec: VideoSpec): Promise<string> {
-  const file = path.join(VIDEOS, spec.file);
+async function makeVideo(videos: string, spec: VideoSpec): Promise<string> {
+  const file = path.join(videos, spec.file);
   await mkdir(path.dirname(file), { recursive: true });
   const metadata: string[] = [];
   if (spec.creationTime) metadata.push("-metadata", `creation_time=${spec.creationTime}`);
@@ -235,38 +235,45 @@ async function makeVideo(spec: VideoSpec): Promise<string> {
   return file;
 }
 
-async function main() {
-  await rm(OUT, { recursive: true, force: true });
-  await mkdir(FOTOS, { recursive: true });
+/**
+ * Generates the sample media into `out` (replacing what is there): `out/Fotos` and
+ * `out/Videos`.
+ */
+export async function generateSampleMedia(out: string = DEFAULT_OUT): Promise<void> {
+  const fotos = path.join(out, "Fotos");
+  const videos = path.join(out, "Videos");
+  await rm(out, { recursive: true, force: true });
+  await mkdir(fotos, { recursive: true });
 
   const exiftool = new ExifTool();
   try {
-    for (const spec of PHOTOS) await makePhoto(exiftool, spec);
+    for (const spec of PHOTOS) await makePhoto(exiftool, fotos, spec);
   } finally {
     await exiftool.end();
   }
-  for (const spec of VIDEOS_SPEC) await makeVideo(spec);
+  for (const spec of VIDEOS_SPEC) await makeVideo(videos, spec);
 
   // An identical copy: processed once, reported as a duplicate.
   await copyFile(
-    path.join(FOTOS, "IMG_20261023_091512.jpg"),
-    path.join(FOTOS, "Kopie von IMG_20261023_091512.jpg"),
+    path.join(fotos, "IMG_20261023_091512.jpg"),
+    path.join(fotos, "Kopie von IMG_20261023_091512.jpg"),
   );
 
   // Ignored files.
-  const ignored = path.join(FOTOS, "IMG_20261023_091512.jpg");
-  await copyFile(ignored, path.join(FOTOS, ".hidden.jpg"));
-  await copyFile(ignored, path.join(FOTOS, ".trashed-1767225600-IMG_9.jpg"));
-  await mkdir(path.join(FOTOS, ".thumbnails"));
-  await copyFile(ignored, path.join(FOTOS, ".thumbnails", "thumb.jpg"));
-  await writeFile(path.join(FOTOS, "Thumbs.db"), "");
-  await writeFile(path.join(FOTOS, ".DS_Store"), "");
+  const ignored = path.join(fotos, "IMG_20261023_091512.jpg");
+  await copyFile(ignored, path.join(fotos, ".hidden.jpg"));
+  await copyFile(ignored, path.join(fotos, ".trashed-1767225600-IMG_9.jpg"));
+  await mkdir(path.join(fotos, ".thumbnails"));
+  await copyFile(ignored, path.join(fotos, ".thumbnails", "thumb.jpg"));
+  await writeFile(path.join(fotos, "Thumbs.db"), "");
+  await writeFile(path.join(fotos, ".DS_Store"), "");
 
   // Unsupported files, listed once in the summary.
-  await writeFile(path.join(FOTOS, "IMG_1234.HEIC"), "not really HEIC");
-  await writeFile(path.join(FOTOS, "notizen.txt"), "Notizen");
-
-  console.log(`Generated sample media in ${path.relative(process.cwd(), OUT) || OUT}`);
+  await writeFile(path.join(fotos, "IMG_1234.HEIC"), "not really HEIC");
+  await writeFile(path.join(fotos, "notizen.txt"), "Notizen");
 }
 
-await main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await generateSampleMedia();
+  console.log(`Generated sample media in ${path.relative(process.cwd(), DEFAULT_OUT)}`);
+}

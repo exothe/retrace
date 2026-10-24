@@ -16,5 +16,6 @@ npm run examples:generate                                  # needs ffmpeg on PAT
 npm run dev -w generator -- check examples/lissabon-2026/trip.config.json --verbose
 ```
 
-The expected `check` result is 0 errors and 3 warnings (media-only date, duplicate, file
+`npm run dev -w generator -- build examples/lissabon-2026/trip.config.json` writes the site to
+`examples/site/` (git-ignored). The expected `check` result is 0 errors and 3 warnings (media-only date, duplicate, file
 without timestamp).

@@ -334,6 +334,7 @@ export interface Trip {
   timezone: string;
   startDate: string;
   endDate: string;
+  cover?: string;                    // media id of the cover, so index.json can be rebuilt from trip.json
   days: Day[];                       // sorted by date
   media: Record<string, Media>;
   tracks: Record<string, Track>;

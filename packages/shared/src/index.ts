@@ -37,6 +37,8 @@ export interface Trip {
   timezone: string;
   startDate: string;
   endDate: string;
+  /** Media id of the cover photo (for videos: its poster), used for the trip list */
+  cover?: string;
   /** Sorted by date */
   days: Day[];
   media: Record<string, Media>;
