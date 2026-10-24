@@ -50,7 +50,7 @@ export default function RouteMap({
       className="size-full"
       center={bounds[0] ?? [0, 0]}
       zoom={13}
-      scrollWheelZoom={false}
+      scrollWheelZoom
       attributionControl
     >
       <TileLayer url={TILE_URL} attribution={ATTRIBUTION} maxZoom={19} />

@@ -415,7 +415,7 @@ Write JSON without pretty-printing for `trip.json` (it can get large) and with p
 - Mobile-first and responsive. It should feel good on a phone, since that is where days will often be browsed.
 - All UI strings live in one module (`strings.ts`). Dates are formatted in German with `Intl.DateTimeFormat("de-DE", { timeZone: trip.timezone })`, e.g. "Samstag, 24. Oktober 2026".
 - Thumbnails use `loading="lazy"` and explicit `width`/`height` (or `aspect-ratio`) with the dominant color as background, so there's no layout shift.
-- Maps are only initialized when they scroll into view (IntersectionObserver).
+- Maps are only initialized when they scroll into view (IntersectionObserver). The mouse wheel zooms a map while the pointer is over it.
 - Use `circleMarker`s or `divIcon`s in Leaflet rather than the default marker images, which break with bundlers. Import Leaflet's CSS. Always show OSM attribution.
 
 ### 10.2 Routes
