@@ -39,7 +39,7 @@ General: Node.js current LTS (22 or newer), TypeScript in strict mode, ESM throu
 
 **Generator**:
 - `commander` for the CLI
-- `yaml` plus `zod` for config parsing and validation
+- `jsonc-parser` (strict mode, for line numbers in error messages) plus `zod` for config parsing and validation
 - `luxon` for all date, time and timezone handling
 - `sharp` for image processing
 - `exiftool-vendored` for photo and video metadata
@@ -63,8 +63,8 @@ Command name: `retrace`.
 
 | Command | Purpose |
 |---|---|
-| `retrace check <trip.yaml>` | Validate config and notes, and print the report (section 5.4). Reads media metadata to report media-related warnings, but processes and writes nothing. |
-| `retrace build <trip.yaml>` | Full run: validate, process media and tracks (cached), write the trip folder, copy the viewer, rebuild `trips/index.json`. |
+| `retrace check <config.json>` | Validate config and notes, and print the report (section 5.4). Reads media metadata to report media-related warnings, but processes and writes nothing. |
+| `retrace build <config.json>` | Full run: validate, process media and tracks (cached), write the trip folder, copy the viewer, rebuild `trips/index.json`. |
 | `retrace index <siteDir>` | Rebuild `trips/index.json` from all `trips/*/trip.json` in the site directory. `build` does this automatically. |
 | `retrace preview [siteDir]` | Serve the site directory locally (default port 4173) for checking before copying to the Pi. |
 
@@ -145,46 +145,51 @@ Keep the parser a pure function (`parseNotes(text) -> { days, diagnostics }`) wi
 
 ## 6. Trip config
 
-One YAML file per trip. Relative paths resolve relative to the config file. Validate with zod and report errors with the offending key.
+One JSON file per trip (strict JSON: no comments, no trailing commas), e.g. `trip.config.json`; any file name works. The examples avoid naming it `trip.json` so it isn't confused with the generated `trip.json` (section 9). Relative paths resolve relative to the config file. Validate with zod and report errors with the offending key and its line.
 
-```yaml
-title: Lissabon 2026                # required
-slug: lissabon-2026                 # required, [a-z0-9-]+, used as folder name and in URLs
-timezone: Europe/Lisbon             # required, IANA name
-notes: ./Lissabon 2026.md           # required, one Markdown file
-media:                              # required, files or folders (folders are scanned recursively)
-  - ./Fotos
-  - ./Videos
-tracks:                             # optional, FIT files or folders
-  - ./Tracks
-output: ../site                     # required, site directory (shared by all trips)
-cover: IMG_20261023_091512.jpg      # optional, file name of the cover photo; default is the first photo
-cacheDir: ...                       # optional, default: OS cache dir from env-paths("retrace")
-ffmpegPath: ...                     # optional
-ffprobePath: ...                    # optional
-
-cameraOffsets:                      # optional, clock corrections, added to the media timestamp
-  "Canon EOS R6": "-00:02:30"       # key matches "<Make> <Model>" or "<Model>" from EXIF
-videoTimesAreUtc: true              # optional, default true (section 7.2)
-
-images:
-  thumbWidth: 400                   # default 400
-  displayWidth: 1920                # default 1920, the longest side is limited for portrait images
-  quality: 75                       # default 75, WebP quality
-
-videos:
-  maxShortSide: 720                 # default 720, the shorter side is limited (works for portrait videos)
-  crf: 28                           # default 28, libx264
-  preset: medium                    # default medium
-  audioBitrate: 128k                # default 128k
-
-tracks_options:
-  simplifyToleranceMeters: 5        # default 5
-  geotagToleranceMinutes: 2         # default 2
-
-privacyZones:                       # optional
-  - { lat: 48.1371, lon: 11.5754, radiusMeters: 500 }
+```json
+{
+  "title": "Lissabon 2026",
+  "slug": "lissabon-2026",
+  "timezone": "Europe/Lisbon",
+  "notes": "./Lissabon 2026.md",
+  "media": ["./Fotos", "./Videos"],
+  "tracks": ["./Tracks"],
+  "output": "../site",
+  "cover": "IMG_20261023_091512.jpg",
+  "cameraOffsets": { "Canon EOS R6": "-00:02:30" },
+  "videoTimesAreUtc": true,
+  "images": { "thumbWidth": 400, "displayWidth": 1920, "quality": 75 },
+  "videos": { "maxShortSide": 720, "crf": 28, "preset": "medium", "audioBitrate": "128k" },
+  "tracks_options": { "simplifyToleranceMeters": 5, "geotagToleranceMinutes": 2 },
+  "privacyZones": [{ "lat": 48.1371, "lon": 11.5754, "radiusMeters": 500 }]
+}
 ```
+
+| Key | Required | Default | Meaning |
+|---|---|---|---|
+| `title` | yes | | Trip title |
+| `slug` | yes | | `[a-z0-9-]+`, used as folder name and in URLs |
+| `timezone` | yes | | IANA name |
+| `notes` | yes | | One Markdown file |
+| `media` | yes | | Files or folders (folders are scanned recursively) |
+| `tracks` | no | | FIT files or folders |
+| `output` | yes | | Site directory (shared by all trips) |
+| `cover` | no | first photo | File name of the cover photo |
+| `cacheDir` | no | OS cache dir from `env-paths("retrace")` | |
+| `ffmpegPath`, `ffprobePath` | no | `ffmpeg`, `ffprobe` on `PATH` | |
+| `cameraOffsets` | no | | Clock corrections added to the media timestamp; the key matches `"<Make> <Model>"` or `"<Model>"` from EXIF |
+| `videoTimesAreUtc` | no | `true` | Section 7.2 |
+| `images.thumbWidth` | no | 400 | |
+| `images.displayWidth` | no | 1920 | The longest side is limited, for portrait images |
+| `images.quality` | no | 75 | WebP quality |
+| `videos.maxShortSide` | no | 720 | The shorter side is limited (works for portrait videos) |
+| `videos.crf` | no | 28 | libx264 |
+| `videos.preset` | no | `medium` | |
+| `videos.audioBitrate` | no | `128k` | |
+| `tracks_options.simplifyToleranceMeters` | no | 5 | |
+| `tracks_options.geotagToleranceMinutes` | no | 2 | |
+| `privacyZones` | no | | List of `{ lat, lon, radiusMeters }` |
 
 The cache directory must never default to a location inside the notes folder, because the notes live in a synced Obsidian vault.
 
@@ -450,7 +455,7 @@ For each day: date and weekday, the first one or two entry texts as a preview, a
 
 ## 11. Deployment (document in the README)
 
-- Build: `npm run build -w viewer`, then `retrace build path/to/trip.yaml`.
+- Build: `npm run build -w viewer`, then `retrace build path/to/trip.config.json`.
 - Copy to the Pi, e.g. `rsync -av --delete site/ pi@raspberrypi:/var/www/retrace/`. Also document a Windows alternative (e.g. `scp -r`, or WinSCP).
 - Provide a minimal nginx server block and a Caddyfile. Set long cache headers (`immutable`) for `trips/*/media/` and `assets/`, since both are content-addressed, and `no-cache` for `index.html` and the JSON files.
 - Mention that the Pi has 32 GB and how to check the size of a trip folder before copying (the build summary prints it).
@@ -475,4 +480,4 @@ Implement in this order and keep each milestone working and tested before moving
 
 ## 14. Future ideas (not v1)
 
-Curation via a sidecar file next to `trip.yaml` (hide, favorite, caption); a "replay" slider that scrubs through a day with a moving map marker; multiple timezones per trip; GPX import; moving to a real server later (e.g. Immich), which the content-addressed layout should make easy.
+Curation via a sidecar file next to the trip config (hide, favorite, caption); a "replay" slider that scrubs through a day with a moving map marker; multiple timezones per trip; GPX import; moving to a real server later (e.g. Immich), which the content-addressed layout should make easy.

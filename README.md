@@ -32,4 +32,14 @@ Run the CLI from source without building (Node strips the TypeScript types):
 npm run dev -w generator -- --help
 ```
 
+## Usage
+
+```sh
+retrace check path/to/trip.config.json [--strict] [--verbose]
+```
+
+Validates the trip config (JSON, see SPEC section 6) and the `# Verlauf` section of the notes and prints a report
+(`<file>:<line>: error|warning: <message>`). Exit code 0 on success, 1 on validation errors
+(or warnings with `--strict`), 2 on runtime failures.
+
 Setup, usage and deployment docs will be completed in milestone 7.

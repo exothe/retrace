@@ -14,6 +14,9 @@ export default tseslint.config(
     rules: {
       "@typescript-eslint/consistent-type-imports": "error",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      // With noUncheckedIndexedAccess, `!` is the idiomatic way to access regex groups and
+      // indices that are known to exist.
+      "@typescript-eslint/no-non-null-assertion": "off",
     },
   },
   {
