@@ -9,6 +9,8 @@ A small sample trip for development and tests (SPEC section 12):
 The generated media covers each timestamp source (EXIF with and without offset, CreateDate,
 `IMG_`/`PXL_`/Samsung file names, QuickTime dates, Apple CreationDate, modification time), a
 media-only date (22.10.), a duplicate, ignored and unsupported files, and an NFD file name.
+A FIT file written with Garmin's encoder has a hike in Sintra on 24.10. (09:00–12:30, with a
+20-minute stop), which geotags the 12:00 photo that has no GPS of its own.
 Each file's purpose is described in the script.
 
 ```sh

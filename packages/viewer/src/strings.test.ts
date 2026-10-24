@@ -4,8 +4,13 @@ import { strings } from "./strings.ts";
 describe("strings", () => {
   it("has no empty UI strings", () => {
     for (const value of Object.values(strings)) {
-      const text = typeof value === "function" ? value(1 as never, "x" as never) : value;
-      expect(text.trim()).not.toBe("");
+      const texts =
+        typeof value === "function"
+          ? [value(1 as never, "x" as never)]
+          : typeof value === "string"
+            ? [value]
+            : Object.values(value);
+      for (const text of texts) expect(text.trim()).not.toBe("");
     }
   });
 

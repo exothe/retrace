@@ -10,10 +10,14 @@ import type { MediaItem, MediaScan } from "./media/scan.ts";
 import { loadNotes } from "./notes/load.ts";
 import type { NoteDay } from "./notes/parse.ts";
 import type { Output } from "./output.ts";
+import { loadTracks } from "./tracks/load.ts";
+import type { LoadedTrack } from "./tracks/load.ts";
 
 export interface Validation {
   days: NoteDay[];
   scan: MediaScan;
+  /** Sorted by start time */
+  tracks: LoadedTrack[];
   cache: Cache;
   /** Media id of the cover, if there is any photo or video */
   cover?: string;
@@ -41,23 +45,26 @@ export async function validateTrip(
     out: options.out,
     ...(options.reader && { reader: options.reader }),
   });
+  const tracks = await loadTracks(scan.tracks, cache, config.trackOptions.simplifyToleranceMeters);
   const diagnostics = [
     ...notes.diagnostics,
-    ...mediaDiagnostics(notes.days, scan.media, config.timezone, config.notes),
+    ...mediaDiagnostics(notes.days, scan.media, tracks.tracks, config.timezone, config.notes),
     ...scan.diagnostics,
+    ...tracks.diagnostics,
   ];
   const cover = resolveCover(config, scan.media);
   if (cover.diagnostic) diagnostics.push(cover.diagnostic);
-  if (notes.days.length === 0 && scan.media.length === 0) {
+  if (notes.days.length === 0 && scan.media.length === 0 && tracks.tracks.length === 0) {
     diagnostics.push({
       severity: "error",
       file: config.notes,
-      message: "the trip has no days: no day headings and no photos or videos",
+      message: "the trip has no days: no day headings, photos, videos or tracks",
     });
   }
   return {
     days: notes.days,
     scan,
+    tracks: tracks.tracks,
     cache,
     ...(cover.id !== undefined && { cover: cover.id }),
     diagnostics,
@@ -90,16 +97,17 @@ export function resolveCover(
   };
 }
 
-/** Number of distinct dates that only have media. */
+/** Number of distinct dates that only have media or tracks. */
 export function countMediaOnlyDays(
   days: readonly NoteDay[],
   media: readonly MediaItem[],
+  tracks: readonly LoadedTrack[],
   zone: string,
 ): number {
   const windows = buildDayWindows(days, zone);
   return new Set(
-    media
-      .map((item) => assignDay(item.takenAt, windows, zone))
+    [...media.map((item) => item.takenAt), ...tracks.map((track) => track.start)]
+      .map((instant) => assignDay(instant, windows, zone))
       .filter((day) => !day.hasNotes)
       .map((day) => day.date),
   ).size;

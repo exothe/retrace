@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@garmin/fitsdk": "21.218.0",
     "commander": "15.0.0",
     "env-paths": "4.0.0",
     "exiftool-vendored": "39.0.1",

@@ -4,6 +4,7 @@
   "timezone": "Europe/Lisbon",
   "notes": "./Lissabon 2026.md",
   "media": ["../generated/lissabon-2026/Fotos", "../generated/lissabon-2026/Videos"],
+  "tracks": ["../generated/lissabon-2026/Tracks"],
   "output": "../site",
   "cover": "IMG_20261023_091512.jpg",
   "cacheDir": "../generated/cache",

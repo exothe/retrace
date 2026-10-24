@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import type { MediaItem } from "../media/scan.ts";
 import { parseNotes } from "../notes/parse.ts";
 import type { ProcessedMedia } from "../process/process-media.ts";
+import { geotag } from "../tracks/geotag.ts";
+import type { LoadedTrack } from "../tracks/load.ts";
 import { assembleTrip, entryIndexFor } from "./assemble.ts";
 
 const ZONE = "Europe/Lisbon";
@@ -37,13 +39,24 @@ function video(local: string): ProcessedMedia {
   };
 }
 
-const assemble = (notes: string, media: ProcessedMedia[], cover?: string) =>
+const assemble = (
+  notes: string,
+  media: ProcessedMedia[],
+  cover?: string,
+  tracks: LoadedTrack[] = [],
+) =>
   assembleTrip({
     slug: "lissabon-2026",
     title: "Lissabon 2026",
     timezone: ZONE,
     days: parseNotes(notes).days,
     media,
+    tracks,
+    ...geotag(
+      media.map((p) => p.item),
+      tracks,
+      2,
+    ),
     ...(cover !== undefined && { cover }),
     generatedAt: "2026-11-01T00:00:00.000Z",
   });
@@ -164,6 +177,84 @@ describe("assembleTrip", () => {
   it("sorts media within an entry by time", () => {
     const trip = assemble(NOTES, [photo("2026-10-23T11:00:00"), photo("2026-10-23T10:00:00")]);
     expect(outline(trip)[0]!.entries[0]).toBe("09:00 Stadt: 10:00 11:00");
+  });
+});
+
+describe("assembleTrip with tracks", () => {
+  const hike = {
+    id: "t00000000001",
+    path: "/t/hike.fit",
+    start: DateTime.fromISO("2026-10-23T10:00:00", { zone: ZONE }).toUTC(),
+    end: DateTime.fromISO("2026-10-23T12:30:00", { zone: ZONE }).toUTC(),
+    records: [
+      {
+        t: DateTime.fromISO("2026-10-23T10:00:00", { zone: ZONE }).toMillis(),
+        lat: 38.7,
+        lon: -9.3,
+        ele: 200,
+        distance: 0,
+      },
+      {
+        t: DateTime.fromISO("2026-10-23T12:30:00", { zone: ZONE }).toMillis(),
+        lat: 38.8,
+        lon: -9.4,
+        ele: 400,
+        distance: 5000,
+      },
+    ],
+    processed: {
+      sport: "hiking",
+      stats: { distanceMeters: 5000, durationSeconds: 9000 },
+      points: [
+        [38.7, -9.3, 200, 0],
+        [38.8, -9.4, 400, 9000],
+      ],
+      elevationProfile: [
+        [0, 200],
+        [5000, 400],
+      ],
+    },
+  } as LoadedTrack;
+
+  it("places a track among the media of its entry by start time, and geotags media", () => {
+    const p1 = photo("2026-10-23T09:30:00");
+    const p2 = photo("2026-10-23T11:15:00");
+    const trip = assemble(NOTES, [p1, p2], undefined, [hike]);
+    const entry = trip.days[0]!.entries[0]!;
+    expect(entry.items).toEqual([
+      { kind: "media", id: p1.item.id },
+      { kind: "track", id: hike.id },
+      { kind: "media", id: p2.item.id },
+    ]);
+    expect(trip.media[p2.item.id]!.gps).toEqual({ lat: 38.75, lon: -9.35, source: "track" });
+    expect(trip.media[p1.item.id]!.gps).toBeUndefined();
+    expect(trip.days[0]!.mapMediaIds).toEqual([p2.item.id]);
+    expect(trip.tracks[hike.id]).toEqual({
+      id: hike.id,
+      start: "2026-10-23T09:00:00Z",
+      end: "2026-10-23T11:30:00Z",
+      localStart: "10:00",
+      localEnd: "12:30",
+      sport: "hiking",
+      stats: { distanceMeters: 5000, durationSeconds: 9000 },
+      points: [
+        [38.7, -9.3, 200, 0],
+        [38.8, -9.4, 400, 9000],
+      ],
+      elevationProfile: [
+        [0, 200],
+        [5000, 400],
+      ],
+      mediaIds: [p2.item.id],
+    });
+  });
+
+  it("gives a track on a date without notes its own day", () => {
+    const trip = assemble("# Verlauf\n## 24.10.2026\n* [09:00] A", [], undefined, [hike]);
+    expect(trip.days.map((d) => [d.date, d.hasNotes, d.before])).toEqual([
+      ["2026-10-23", false, [{ kind: "track", id: hike.id }]],
+      ["2026-10-24", true, []],
+    ]);
   });
 });
 

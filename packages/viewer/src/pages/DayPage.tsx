@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
-import type { Day, Media, TimelineItem, Trip } from "@retrace/shared";
+import type { Day, Media, TimelineItem, Track, Trip } from "@retrace/shared";
+import { DayMap } from "../components/DayMap.tsx";
 import { MediaGrid } from "../components/MediaGrid.tsx";
+import { TrackCard } from "../components/TrackCard.tsx";
 import { MediaLightbox } from "../components/MediaLightbox.tsx";
 import { toSlide } from "../slides.ts";
 import { ErrorMessage, Loading, Page } from "../components/Page.tsx";
@@ -62,10 +64,18 @@ function DayView({ trip, date }: { trip: Trip; date: string }) {
   }, [day, trip]);
   const lightboxIndex = mediaId === undefined ? -1 : ids.indexOf(mediaId);
 
+  // Opens the lightbox; a pin of a track that crosses midnight may show media of another day.
   const open = useCallback(
-    (id: string) =>
-      navigate(`${dayPath}/${id}`, { state: { openedHere: true } satisfies OpenedHere }),
-    [navigate, dayPath],
+    (id: string) => {
+      const owner = ids.includes(id)
+        ? day
+        : trip.days.find((d) => dayMediaIds(d, trip).includes(id));
+      if (!owner) return;
+      navigate(`${base}/${owner.date}/${id}`, {
+        state: { openedHere: true } satisfies OpenedHere,
+      });
+    },
+    [navigate, base, ids, day, trip],
   );
   const view = useCallback(
     (index: number) =>
@@ -105,11 +115,6 @@ function DayView({ trip, date }: { trip: Trip; date: string }) {
 
   if (!day) return <ErrorMessage title={strings.dayNotFound} />;
 
-  const mediaOf = (items: TimelineItem[]): Media[] =>
-    items.flatMap((item) =>
-      item.kind === "media" && trip.media[item.id] ? [trip.media[item.id]!] : [],
-    );
-
   return (
     <>
       <header className="sticky top-0 z-10 -mx-4 mb-4 flex items-center gap-2 border-b border-zinc-200 bg-white/90 px-4 py-3 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
@@ -128,57 +133,91 @@ function DayView({ trip, date }: { trip: Trip; date: string }) {
       {!day.hasNotes && (
         <p className="mb-4 text-sm text-zinc-500 italic">{strings.mediaOnlyNote}</p>
       )}
-      <Timeline day={day} slug={trip.slug} mediaOf={mediaOf} onOpen={open} />
+      {day.mapMediaIds.length > 0 && <DayMap day={day} trip={trip} onOpenMedia={open} />}
+      <Timeline day={day} trip={trip} onOpen={open} />
 
       <MediaLightbox slides={slides} index={lightboxIndex} onView={view} onClose={close} />
     </>
   );
 }
 
-function Timeline({
-  day,
-  slug,
-  mediaOf,
-  onOpen,
-}: {
-  day: Day;
-  slug: string;
-  mediaOf: (items: TimelineItem[]) => Media[];
-  onOpen: (id: string) => void;
-}) {
-  const before = mediaOf(day.before);
+function Timeline({ day, trip, onOpen }: { day: Day; trip: Trip; onOpen: (id: string) => void }) {
   return (
     <ol className="relative space-y-6 border-l border-zinc-200 pl-5 dark:border-zinc-800">
-      {before.length > 0 && (
+      {day.before.length > 0 && (
         <li className="relative">
           <Dot muted />
           {day.hasNotes && <p className="mb-2 text-sm text-zinc-500">{strings.beforeFirstEntry}</p>}
-          <MediaGrid slug={slug} media={before} onOpen={onOpen} />
+          <Items items={day.before} trip={trip} onOpen={onOpen} />
         </li>
       )}
-      {day.entries.map((entry) => {
-        const media = mediaOf(entry.items);
-        return (
-          <li key={entry.id} className="relative">
-            <Dot />
-            <p className="leading-snug">
-              <time
-                dateTime={entry.timestamp}
-                className="mr-2 font-semibold text-zinc-900 tabular-nums dark:text-zinc-100"
-              >
-                {entry.time}
-              </time>
-              <span className="whitespace-pre-wrap">{entry.text}</span>
-            </p>
-            {media.length > 0 && (
-              <div className="mt-2.5">
-                <MediaGrid slug={slug} media={media} onOpen={onOpen} />
-              </div>
-            )}
-          </li>
-        );
-      })}
+      {day.entries.map((entry) => (
+        <li key={entry.id} className="relative">
+          <Dot />
+          <p className="leading-snug">
+            <time
+              dateTime={entry.timestamp}
+              className="mr-2 font-semibold text-zinc-900 tabular-nums dark:text-zinc-100"
+            >
+              {entry.time}
+            </time>
+            <span className="whitespace-pre-wrap">{entry.text}</span>
+          </p>
+          {entry.items.length > 0 && (
+            <div className="mt-2.5">
+              <Items items={entry.items} trip={trip} onOpen={onOpen} />
+            </div>
+          )}
+        </li>
+      ))}
     </ol>
+  );
+}
+
+/** Items in time order: runs of media as one grid, tracks as cards between them. */
+function Items({
+  items,
+  trip,
+  onOpen,
+}: {
+  items: TimelineItem[];
+  trip: Trip;
+  onOpen: (id: string) => void;
+}) {
+  const groups: ({ kind: "media"; media: Media[] } | { kind: "track"; track: Track })[] = [];
+  for (const item of items) {
+    if (item.kind === "track") {
+      const track = trip.tracks[item.id];
+      if (track) groups.push({ kind: "track", track });
+      continue;
+    }
+    const media = trip.media[item.id];
+    if (!media) continue;
+    const last = groups.at(-1);
+    if (last?.kind === "media") last.media.push(media);
+    else groups.push({ kind: "media", media: [media] });
+  }
+  return (
+    <div className="space-y-3">
+      {groups.map((group) =>
+        group.kind === "track" ? (
+          <TrackCard
+            key={group.track.id}
+            slug={trip.slug}
+            track={group.track}
+            media={trip.media}
+            onOpenMedia={onOpen}
+          />
+        ) : (
+          <MediaGrid
+            key={group.media[0]!.id}
+            slug={trip.slug}
+            media={group.media}
+            onOpen={onOpen}
+          />
+        ),
+      )}
+    </div>
   );
 }
 

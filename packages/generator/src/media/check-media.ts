@@ -3,6 +3,7 @@ import type { Diagnostic } from "../diagnostics.ts";
 import { assignDay, buildDayWindows, entryInstant } from "../days/windows.ts";
 import { formatDate } from "../notes/parse.ts";
 import type { NoteDay } from "../notes/parse.ts";
+import type { LoadedTrack } from "../tracks/load.ts";
 import type { MediaItem } from "./scan.ts";
 
 const FAR_OUTSIDE_DAYS = 2;
@@ -14,24 +15,36 @@ const FAR_OUTSIDE_DAYS = 2;
 export function mediaDiagnostics(
   days: readonly NoteDay[],
   media: readonly MediaItem[],
+  tracks: readonly LoadedTrack[],
   zone: string,
   notesFile: string,
 ): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   const windows = buildDayWindows(days, zone);
 
-  const unheaded = new Map<string, number>();
-  for (const item of media) {
-    const { date, hasNotes } = assignDay(item.takenAt, windows, zone);
-    if (!hasNotes) unheaded.set(date, (unheaded.get(date) ?? 0) + 1);
-  }
-  for (const [date, count] of [...unheaded].sort(([a], [b]) => (a < b ? -1 : 1))) {
+  const unheaded = new Map<string, { media: number; tracks: number }>();
+  const count = (instant: DateTime, kind: "media" | "tracks") => {
+    const { date, hasNotes } = assignDay(instant, windows, zone);
+    if (hasNotes) return;
+    const counts = unheaded.get(date) ?? { media: 0, tracks: 0 };
+    counts[kind]++;
+    unheaded.set(date, counts);
+  };
+  for (const item of media) count(item.takenAt, "media");
+  for (const track of tracks) count(track.start, "tracks");
+  for (const [date, counts] of [...unheaded].sort(([a], [b]) => (a < b ? -1 : 1))) {
+    const parts = [
+      ...(counts.media > 0
+        ? [`${counts.media} ${counts.media === 1 ? "photo or video" : "photos and videos"}`]
+        : []),
+      ...(counts.tracks > 0
+        ? [`${counts.tracks} ${counts.tracks === 1 ? "track" : "tracks"}`]
+        : []),
+    ];
     diagnostics.push({
       severity: "warning",
       file: notesFile,
-      message:
-        `${count} ${count === 1 ? "photo or video" : "photos and videos"} on ${formatDate(date)}, ` +
-        "but no day heading for that date (forgotten heading?)",
+      message: `${parts.join(" and ")} on ${formatDate(date)}, but no day heading for that date (forgotten heading?)`,
     });
   }
 

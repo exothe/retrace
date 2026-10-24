@@ -11,3 +11,45 @@
     @apply bg-white text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
   }
 }
+
+/*
+ * Map pins showing the thumbnail of a photo or video where it was taken (RouteMap.tsx).
+ * Unlayered and scoped under Leaflet's classes on purpose: leaflet.css is unlayered (which
+ * beats any @layer) and sets `display: block` on marker icons and `width: auto` on marker
+ * images, so these rules need to win on specificity.
+ */
+.leaflet-marker-icon.retrace-pin {
+  @apply flex flex-col items-center;
+}
+
+/* Grows from its bottom edge on hover, so it stays attached to the pointer below it. */
+.retrace-pin .retrace-pin-frame {
+  @apply relative block size-11 shrink-0 origin-bottom overflow-hidden rounded-md border-2 border-white bg-zinc-300 shadow-md transition-transform;
+}
+
+.retrace-pin:hover .retrace-pin-frame {
+  @apply scale-110;
+}
+
+.leaflet-marker-icon.retrace-pin:focus-visible {
+  @apply outline-none;
+}
+
+.retrace-pin:focus-visible .retrace-pin-frame {
+  @apply scale-110 border-sky-400;
+}
+
+.leaflet-container .leaflet-marker-pane .retrace-pin-frame img {
+  @apply size-full max-w-none object-cover;
+}
+
+/* The pointer below the frame; its tip is the marker's anchor. */
+.leaflet-marker-icon.retrace-pin::after {
+  content: "";
+  @apply -mt-px block size-0 shrink-0 border-x-[6px] border-t-[7px] border-x-transparent border-t-white drop-shadow;
+}
+
+/* Small play triangle on video pins. */
+.retrace-pin .retrace-pin-play {
+  @apply absolute right-0.5 bottom-0.5 size-0 border-y-[5px] border-l-[8px] border-y-transparent border-l-white drop-shadow;
+}

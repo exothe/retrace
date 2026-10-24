@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@garmin/fitsdk": "21.218.0",
     "exiftool-vendored": "39.0.1",
     "luxon": "3.7.2",
     "sharp": "0.35.5"

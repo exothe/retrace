@@ -1,6 +1,6 @@
 import type { Media, Trip, TripIndex } from "@retrace/shared";
 
-const photo = (id: string, takenAt: string, localTime: string): Media => ({
+const photo = (id: string, takenAt: string, localTime: string, gps?: Media["gps"]): Media => ({
   id,
   type: "photo",
   takenAt,
@@ -10,6 +10,7 @@ const photo = (id: string, takenAt: string, localTime: string): Media => ({
   color: "#336699",
   thumb: `media/${id}-thumb.webp`,
   display: `media/${id}-display.webp`,
+  ...(gps && { gps }),
 });
 
 export const TRIP: Trip = {
@@ -71,7 +72,7 @@ export const TRIP: Trip = {
           time: "08:00",
           timestamp: "2026-10-24T07:00:00Z",
           text: "Wandern",
-          items: [],
+          items: [{ kind: "track", id: "t1" }],
         },
       ],
       mapMediaIds: [],
@@ -79,7 +80,11 @@ export const TRIP: Trip = {
   ],
   media: {
     p1: photo("p1", "2026-10-22T17:30:00Z", "18:30"),
-    p2: photo("p2", "2026-10-23T08:15:12Z", "09:15"),
+    p2: photo("p2", "2026-10-23T08:15:12Z", "09:15", {
+      lat: 38.7114,
+      lon: -9.1305,
+      source: "exif",
+    }),
     p3: photo("p3", "2026-10-23T12:45:00Z", "13:45"),
     v1: {
       id: "v1",
@@ -94,7 +99,37 @@ export const TRIP: Trip = {
       durationSeconds: 75,
     },
   },
-  tracks: {},
+  tracks: {
+    t1: {
+      id: "t1",
+      start: "2026-10-24T08:00:00Z",
+      end: "2026-10-24T11:30:00Z",
+      localStart: "09:00",
+      localEnd: "12:30",
+      sport: "hiking",
+      stats: {
+        distanceMeters: 3039,
+        durationSeconds: 12600,
+        movingSeconds: 11400,
+        ascentMeters: 178,
+        descentMeters: 177,
+        minElevation: 210,
+        maxElevation: 496,
+      },
+      points: [
+        [38.7979, -9.3881, 210, 0],
+        [38.7876, -9.3906, 495, 6000],
+        [38.7979, -9.3881, 210, 12600],
+      ],
+      elevationProfile: [
+        [0, 210],
+        [1500, 495],
+        [3039, 210],
+      ],
+      // p2 belongs to the previous day: a pin can point to another day's media.
+      mediaIds: ["p2"],
+    },
+  },
 };
 
 export const INDEX: TripIndex = {

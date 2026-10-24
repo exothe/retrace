@@ -50,6 +50,7 @@ describe.runIf(hasFfmpeg)("build (end to end, sample trip)", () => {
     ) as Record<string, unknown>;
     Object.assign(config, {
       media: [path.join(media, "Fotos"), path.join(media, "Videos")],
+      tracks: [path.join(media, "Tracks")],
       output: "../site",
       cacheDir: "../cache",
     });
@@ -67,7 +68,7 @@ describe.runIf(hasFfmpeg)("build (end to end, sample trip)", () => {
     const { site, lines, build } = await setup();
     expect(await build()).toBe(ExitCode.Success);
     expect(lines.at(-1)).toMatch(
-      /^Built lissabon-2026: 4 days, 9 entries, 10 photos, 2 videos, 0 tracks, 3 warnings, [\d.]+ KB in /,
+      /^Built lissabon-2026: 4 days, 9 entries, 10 photos, 2 videos, 1 track, 3 warnings, [\d.]+ KB in /,
     );
     expect(lines).toContain("Media: 12 processed, 0 from cache");
 

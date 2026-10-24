@@ -50,7 +50,7 @@ export function printValidationSummary(
     }
     for (const file of scan.unsupported) out.log(`  unsupported: ${displayPath(file)}`);
   }
-  const mediaOnly = countMediaOnlyDays(days, scan.media, config.timezone);
+  const mediaOnly = countMediaOnlyDays(days, scan.media, validation.tracks, config.timezone);
   const entryCount = days.reduce((sum, day) => sum + day.entries.length, 0);
   const photos = scan.media.filter((item) => item.kind === "photo").length;
   out.log(
@@ -59,7 +59,7 @@ export function printValidationSummary(
   );
   out.log(
     `Media: ${plural(photos, "photo")}, ${plural(scan.media.length - photos, "video")}, ` +
-      `${plural(scan.tracks.length, "track")}` +
+      `${plural(validation.tracks.length, "track")}` +
       (scan.unsupported.length > 0
         ? `; ${plural(scan.unsupported.length, "unsupported file")} ` +
           `(${summarizeUnsupported(scan.unsupported)})`

@@ -1,8 +1,10 @@
 import type { DateTime } from "luxon";
-import type { Day, Entry, Media, TimelineItem, Trip } from "@retrace/shared";
+import type { Day, Entry, Media, TimelineItem, Track, Trip } from "@retrace/shared";
 import { assignDay, buildDayWindows, entryInstant } from "../days/windows.ts";
 import type { NoteDay } from "../notes/parse.ts";
 import type { ProcessedMedia } from "../process/process-media.ts";
+import type { Position } from "../tracks/geotag.ts";
+import type { LoadedTrack } from "../tracks/load.ts";
 
 export interface AssembleInput {
   slug: string;
@@ -10,6 +12,11 @@ export interface AssembleInput {
   timezone: string;
   days: readonly NoteDay[];
   media: readonly ProcessedMedia[];
+  tracks: readonly LoadedTrack[];
+  /** Media positions from EXIF or geotagging, by media id */
+  positions: ReadonlyMap<string, Position>;
+  /** Ids of the positioned media taken during each track, by track id */
+  trackMedia: ReadonlyMap<string, readonly string[]>;
   /** Media id of the cover */
   cover?: string;
   generatedAt: string;
@@ -27,27 +34,41 @@ export function mediaFileNames(p: ProcessedMedia): Record<string, string> {
 }
 
 /**
- * Builds trip.json (SPEC sections 8.8 and 9.2): note days plus media-only days, each media item
- * under the latest entry at or before its time (or in `before`), sorted by time.
+ * Builds trip.json (SPEC sections 8.8 and 9.2): note days plus days with only media or tracks.
+ * Each media item and track goes under the latest entry at or before its time (or in `before`),
+ * sorted by time; a track counts by its start time.
  */
 export function assembleTrip(input: AssembleInput): Trip {
   const zone = input.timezone;
   const windows = buildDayWindows(input.days, zone);
 
   const media: Record<string, Media> = {};
-  const mediaByDate = new Map<string, ProcessedMedia[]>();
+  const tracks: Record<string, Track> = {};
+  const itemsByDate = new Map<string, DayItem[]>();
+  const add = (instant: DateTime, item: DayItem) => {
+    const { date } = assignDay(instant, windows, zone);
+    const list = itemsByDate.get(date);
+    if (list) list.push(item);
+    else itemsByDate.set(date, [item]);
+  };
   for (const p of input.media) {
-    media[p.item.id] = toMedia(p, zone);
-    const { date } = assignDay(p.item.takenAt, windows, zone);
-    const list = mediaByDate.get(date);
-    if (list) list.push(p);
-    else mediaByDate.set(date, [p]);
+    media[p.item.id] = toMedia(p, zone, input.positions.get(p.item.id));
+    add(p.item.takenAt, { kind: "media", id: p.item.id, at: p.item.takenAt.toMillis() });
+  }
+  const mediaIds = new Set(Object.keys(media));
+  for (const t of input.tracks) {
+    tracks[t.id] = toTrack(
+      t,
+      zone,
+      (input.trackMedia.get(t.id) ?? []).filter((id) => mediaIds.has(id)),
+    );
+    add(t.start, { kind: "track", id: t.id, at: t.start.toMillis() });
   }
 
   const noteDays = new Map(input.days.map((day) => [day.date, day]));
-  const dates = [...new Set([...noteDays.keys(), ...mediaByDate.keys()])].sort();
+  const dates = [...new Set([...noteDays.keys(), ...itemsByDate.keys()])].sort();
   const days = dates.map((date) =>
-    buildDay(date, noteDays.get(date), sortByTime(mediaByDate.get(date) ?? []), zone),
+    buildDay(date, noteDays.get(date), sortByTime(itemsByDate.get(date) ?? []), media, zone),
   );
 
   return {
@@ -61,14 +82,18 @@ export function assembleTrip(input: AssembleInput): Trip {
     ...(input.cover !== undefined && { cover: input.cover }),
     days,
     media,
-    tracks: {},
+    tracks,
   };
 }
+
+/** A media item or track with its time, for sorting into a day. */
+type DayItem = TimelineItem & { at: number };
 
 function buildDay(
   date: string,
   noteDay: NoteDay | undefined,
-  media: ProcessedMedia[],
+  items: DayItem[],
+  media: Record<string, Media>,
   zone: string,
 ): Day {
   const entries: Entry[] = (noteDay?.entries ?? []).map((entry, index) => ({
@@ -80,16 +105,16 @@ function buildDay(
   }));
   const instants = (noteDay?.entries ?? []).map((entry) => entryInstant(entry, zone).toMillis());
   const before: TimelineItem[] = [];
-  for (const p of media) {
-    const index = entryIndexFor(instants, p.item.takenAt.toMillis());
-    (index === undefined ? before : entries[index]!.items).push({ kind: "media", id: p.item.id });
+  for (const { kind, id, at } of items) {
+    const index = entryIndexFor(instants, at);
+    (index === undefined ? before : entries[index]!.items).push({ kind, id });
   }
   return {
     date,
     hasNotes: noteDay !== undefined,
     before,
     entries,
-    mapMediaIds: media.filter((p) => p.item.gps).map((p) => p.item.id),
+    mapMediaIds: items.filter((i) => i.kind === "media" && media[i.id]!.gps).map((i) => i.id),
   };
 }
 
@@ -109,14 +134,26 @@ export function entryIndexFor(
   return best;
 }
 
-function sortByTime(media: ProcessedMedia[]): ProcessedMedia[] {
-  return [...media].sort(
-    (a, b) =>
-      a.item.takenAt.toMillis() - b.item.takenAt.toMillis() || (a.item.id < b.item.id ? -1 : 1),
-  );
+function sortByTime(items: DayItem[]): DayItem[] {
+  return [...items].sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1));
 }
 
-function toMedia(p: ProcessedMedia, zone: string): Media {
+function toTrack(t: LoadedTrack, zone: string, mediaIds: string[]): Track {
+  return {
+    id: t.id,
+    start: iso(t.start),
+    end: iso(t.end),
+    localStart: t.start.setZone(zone).toFormat("HH:mm"),
+    localEnd: t.end.setZone(zone).toFormat("HH:mm"),
+    ...(t.processed.sport !== undefined && { sport: t.processed.sport }),
+    stats: t.processed.stats,
+    points: t.processed.points,
+    elevationProfile: t.processed.elevationProfile,
+    mediaIds,
+  };
+}
+
+function toMedia(p: ProcessedMedia, zone: string, position: Position | undefined): Media {
   const names = mediaFileNames(p);
   const at = (name: string) => `${MEDIA_DIR}/${names[name]}`;
   const base = {
@@ -126,12 +163,8 @@ function toMedia(p: ProcessedMedia, zone: string): Media {
     width: p.info.width,
     height: p.info.height,
     color: p.info.color,
-    ...(p.item.gps && {
-      gps: {
-        lat: round(p.item.gps.lat, 6),
-        lon: round(p.item.gps.lon, 6),
-        source: "exif" as const,
-      },
+    ...(position && {
+      gps: { lat: round(position.lat, 6), lon: round(position.lon, 6), source: position.source },
     }),
   };
   return p.type === "photo"

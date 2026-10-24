@@ -9,6 +9,15 @@ import { copyFile, mkdir, rm, utimes, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { Encoder, Profile } from "@garmin/fitsdk";
+import type {
+  ActivityMesg,
+  Encodable,
+  FileIdMesg,
+  Mesg,
+  RecordMesg,
+  SessionMesg,
+} from "@garmin/fitsdk";
 import { ExifTool } from "exiftool-vendored";
 import type { WriteTags } from "exiftool-vendored";
 import sharp from "sharp";
@@ -150,6 +159,129 @@ const VIDEOS_SPEC: VideoSpec[] = [
   },
 ];
 
+/**
+ * A hike in Sintra on 24.10., 09:00–12:30 local (08:00–11:30 UTC), one record every 10 s:
+ * up from the village past the Moorish Castle to Pena Palace, a 20-minute stop there, and back.
+ * The 12:00 photo (no GPS) lies on it and gets geotagged from the track.
+ */
+const HIKE = {
+  start: Date.parse("2026-10-24T08:00:00Z"),
+  durationSeconds: 3.5 * 3600,
+  pause: { fromSeconds: 6000, seconds: 1200 },
+  // [lat, lon, elevation]
+  waypoints: [
+    [38.7979, -9.3881, 210],
+    [38.7944, -9.3897, 330],
+    [38.7925, -9.3895, 410],
+    [38.7876, -9.3906, 495],
+    [38.7905, -9.3958, 430],
+    [38.7955, -9.3925, 300],
+    [38.7979, -9.3881, 210],
+  ] as const,
+};
+
+const SEMICIRCLES_PER_DEGREE = 2 ** 31 / 180;
+
+function haversine(a: readonly number[], b: readonly number[]): number {
+  const rad = Math.PI / 180;
+  const dLat = (b[0]! - a[0]!) * rad;
+  const dLon = (b[1]! - a[1]!) * rad;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(a[0]! * rad) * Math.cos(b[0]! * rad) * Math.sin(dLon / 2) ** 2;
+  return 2 * 6371008.8 * Math.asin(Math.sqrt(h));
+}
+
+/** Writes the hike as a FIT activity with the official Garmin encoder. */
+async function makeTrack(file: string): Promise<void> {
+  const { start, durationSeconds, pause, waypoints } = HIKE;
+  const moving = durationSeconds - pause.seconds;
+  const segments = waypoints
+    .slice(1)
+    .map((to, i) => ({ from: waypoints[i]!, to, length: haversine(waypoints[i]!, to) }));
+  const totalLength = segments.reduce((sum, s) => sum + s.length, 0);
+  const at = (fraction: number) => {
+    let remaining = fraction * totalLength;
+    for (const s of segments) {
+      if (remaining <= s.length || s === segments.at(-1)) {
+        const t = s.length === 0 ? 0 : Math.min(1, remaining / s.length);
+        return s.from.map((v, k) => v + (s.to[k]! - v) * t);
+      }
+      remaining -= s.length;
+    }
+    return [...waypoints[0]];
+  };
+
+  const encoder = new Encoder();
+  const write = <T extends Mesg>(message: Encodable<T>) => encoder.writeMesg(message);
+  const mesg = {
+    FILE_ID: Profile.MesgNum.FILE_ID!,
+    RECORD: Profile.MesgNum.RECORD!,
+    SESSION: Profile.MesgNum.SESSION!,
+    ACTIVITY: Profile.MesgNum.ACTIVITY!,
+  };
+  write<FileIdMesg>({
+    mesgNum: mesg.FILE_ID,
+    type: "activity",
+    manufacturer: "development",
+    product: 1,
+    timeCreated: new Date(start),
+    serialNumber: 42,
+  });
+  let distance = 0;
+  let previous: number[] | undefined;
+  let ascent = 0;
+  let descent = 0;
+  for (let t = 0; t <= durationSeconds; t += 10) {
+    const movingTime = t < pause.fromSeconds ? t : Math.max(pause.fromSeconds, t - pause.seconds);
+    const [lat, lon, ele] = at(Math.min(1, movingTime / moving));
+    // A little deterministic wiggle, so the track isn't a set of straight lines.
+    const point = [
+      lat! + Math.sin(t / 97) * 0.00008,
+      lon! + Math.cos(t / 83) * 0.00008,
+      ele! + Math.sin(t / 50) * 1.5,
+    ];
+    if (previous) {
+      distance += haversine(previous, point);
+      const climb = point[2]! - previous[2]!;
+      if (climb > 0) ascent += climb;
+      else descent -= climb;
+    }
+    previous = point;
+    write<RecordMesg>({
+      mesgNum: mesg.RECORD,
+      timestamp: new Date(start + t * 1000),
+      positionLat: Math.round(point[0]! * SEMICIRCLES_PER_DEGREE),
+      positionLong: Math.round(point[1]! * SEMICIRCLES_PER_DEGREE),
+      enhancedAltitude: point[2]!,
+      distance,
+    });
+  }
+  const end = new Date(start + durationSeconds * 1000);
+  write<SessionMesg>({
+    mesgNum: mesg.SESSION,
+    timestamp: end,
+    startTime: new Date(start),
+    sport: "hiking",
+    totalElapsedTime: durationSeconds,
+    totalTimerTime: moving,
+    totalDistance: distance,
+    totalAscent: Math.round(ascent * 0.6), // devices smooth altitude; keep it plausible
+    totalDescent: Math.round(descent * 0.6),
+  });
+  write<ActivityMesg>({
+    mesgNum: mesg.ACTIVITY,
+    timestamp: end,
+    totalTimerTime: moving,
+    numSessions: 1,
+    type: "manual",
+    event: "activity",
+    eventType: "stop",
+  });
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, encoder.close());
+}
+
 function labelSvg(width: number, height: number, label: string): Buffer {
   const fontSize = Math.round(Math.min(width, height) / 9);
   return Buffer.from(
@@ -236,8 +368,8 @@ async function makeVideo(videos: string, spec: VideoSpec): Promise<string> {
 }
 
 /**
- * Generates the sample media into `out` (replacing what is there): `out/Fotos` and
- * `out/Videos`.
+ * Generates the sample media into `out` (replacing what is there): `out/Fotos`,
+ * `out/Videos` and `out/Tracks`.
  */
 export async function generateSampleMedia(out: string = DEFAULT_OUT): Promise<void> {
   const fotos = path.join(out, "Fotos");
@@ -252,6 +384,7 @@ export async function generateSampleMedia(out: string = DEFAULT_OUT): Promise<vo
     await exiftool.end();
   }
   for (const spec of VIDEOS_SPEC) await makeVideo(videos, spec);
+  await makeTrack(path.join(out, "Tracks", "sintra.fit"));
 
   // An identical copy: processed once, reported as a duplicate.
   await copyFile(

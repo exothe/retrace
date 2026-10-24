@@ -64,3 +64,34 @@ export function formatDuration(seconds: number): string {
   const s = String(total % 60).padStart(2, "0");
   return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
 }
+
+const numberFormats = new Map<number, Intl.NumberFormat>();
+function formatNumber(value: number, fractionDigits: number): string {
+  let format = numberFormats.get(fractionDigits);
+  if (!format) {
+    format = new Intl.NumberFormat(LOCALE, {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    });
+    numberFormats.set(fractionDigits, format);
+  }
+  return format.format(value);
+}
+
+/** 3039 -> "3,0 km", 12345 -> "12,3 km", 640 -> "0,6 km", 123456 -> "123 km" */
+export function formatKilometers(meters: number): string {
+  const km = meters / 1000;
+  return `${formatNumber(km, km >= 100 ? 0 : 1)} km`;
+}
+
+/** 178 -> "178 m", 1234 -> "1.234 m" */
+export function formatMeters(meters: number): string {
+  return `${formatNumber(Math.round(meters), 0)} m`;
+}
+
+/** 12600 -> "3:30 h", 2700 -> "45 min" */
+export function formatHours(seconds: number): string {
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")} h`;
+}

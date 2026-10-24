@@ -15,6 +15,7 @@ import {
   assertViewerBuilt,
   copyViewer,
 } from "../site/viewer.ts";
+import { geotag } from "../tracks/geotag.ts";
 import { assembleTrip } from "../trip/assemble.ts";
 import { validateTrip } from "../validate.ts";
 import {
@@ -89,12 +90,20 @@ export async function runBuild(
     validation.cover !== undefined && processedIds.has(validation.cover)
       ? validation.cover
       : (result.processed.find((p) => p.type === "photo") ?? result.processed[0])?.item.id;
+  const { positions, trackMedia } = geotag(
+    result.processed.map((p) => p.item),
+    validation.tracks,
+    config.trackOptions.geotagToleranceMinutes,
+  );
   const trip = assembleTrip({
     slug: config.slug,
     title: config.title,
     timezone: config.timezone,
     days: validation.days,
     media: result.processed,
+    tracks: validation.tracks,
+    positions,
+    trackMedia,
     ...(cover !== undefined && { cover }),
     generatedAt: (options.now?.() ?? new Date()).toISOString(),
   });
