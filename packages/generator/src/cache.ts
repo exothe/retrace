@@ -7,7 +7,7 @@ import path from "node:path";
  * Bump when metadata extraction changes (tags read, how they are stored), so cached results
  * are re-extracted. Processing versions for images and videos live next to their code.
  */
-export const METADATA_VERSION = 1;
+export const METADATA_VERSION = 2;
 
 /** SHA-256 of a file's content, streamed. */
 export async function hashFile(file: string): Promise<string> {

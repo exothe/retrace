@@ -26,6 +26,9 @@ export interface RawMetadata {
   /** Signed decimal degrees */
   gpsLatitude?: number;
   gpsLongitude?: number;
+  /** Title and caption as set in photo management apps (Lightroom, Apple Photos, digiKam) */
+  title?: string;
+  caption?: string;
   /** exiftool's error for files it could not read */
   error?: string;
 }
@@ -53,6 +56,8 @@ const TAGS: Record<keyof Omit<RawMetadata, "error">, string[]> = {
   model: ["EXIF:Model", "QuickTime:Model", "QuickTime:AndroidModel"],
   gpsLatitude: ["Composite:GPSLatitude#"],
   gpsLongitude: ["Composite:GPSLongitude#"],
+  title: ["XMP:Title", "IPTC:ObjectName", "EXIF:XPTitle"],
+  caption: ["XMP:Description", "IPTC:Caption-Abstract", "EXIF:ImageDescription"],
 };
 
 const READ_ARGS = [...Object.values(TAGS).flat(), "ExifTool:Error"].map((tag) => `-${tag}`);

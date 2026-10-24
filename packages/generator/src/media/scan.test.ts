@@ -6,7 +6,7 @@ import type { TripConfig } from "../config.ts";
 import { silentOutput } from "../output.ts";
 import { useTempDir } from "../test/temp-dir.ts";
 import type { MetadataReader, RawMetadata } from "./metadata.ts";
-import { scanMedia, toGps } from "./scan.ts";
+import { scanMedia, toGps, toTexts } from "./scan.ts";
 
 const tempDir = useTempDir();
 
@@ -151,5 +151,25 @@ describe("toGps", () => {
     expect(toGps({ gpsLatitude: 0, gpsLongitude: 5 })).toEqual({ lat: 0, lon: 5 });
     expect(toGps({ gpsLatitude: 38.7 })).toBeUndefined();
     expect(toGps({ gpsLatitude: 91, gpsLongitude: 0 })).toBeUndefined();
+  });
+});
+
+describe("toTexts", () => {
+  it("trims title and caption and drops a caption equal to the title", () => {
+    expect(toTexts({ title: " Alfama ", caption: "Blick\r\nvom Miradouro\n" })).toEqual({
+      title: "Alfama",
+      caption: "Blick\nvom Miradouro",
+    });
+    expect(toTexts({ title: "Alfama", caption: "Alfama" })).toEqual({ title: "Alfama" });
+    expect(toTexts({ title: "  " })).toEqual({});
+  });
+
+  it("ignores camera placeholders and the camera make or model", () => {
+    expect(toTexts({ caption: "OLYMPUS DIGITAL CAMERA" })).toEqual({});
+    expect(toTexts({ caption: "sony dsc" })).toEqual({});
+    expect(toTexts({ make: "SAMSUNG", caption: "SAMSUNG" })).toEqual({});
+    expect(toTexts({ model: "Pixel 8", title: "Pixel 8", caption: "Sintra" })).toEqual({
+      caption: "Sintra",
+    });
   });
 });

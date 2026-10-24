@@ -30,6 +30,8 @@ export interface MediaItem {
   camera?: string;
   cameraOffsetKey?: string;
   gps?: { lat: number; lon: number };
+  title?: string;
+  caption?: string;
 }
 
 export interface MediaScan {
@@ -121,6 +123,7 @@ export async function scanMedia(config: TripConfig, options: ScanOptions): Promi
         });
       }
       const gps = toGps(metadata);
+      const texts = toTexts(metadata);
       return {
         id: file.hash.slice(0, 12),
         hash: file.hash,
@@ -139,6 +142,7 @@ export async function scanMedia(config: TripConfig, options: ScanOptions): Promi
           cameraOffsetKey: timestamp.cameraOffsetKey,
         }),
         ...(gps && { gps }),
+        ...texts,
       };
     });
   } finally {
@@ -168,4 +172,39 @@ export function toGps(metadata: RawMetadata): { lat: number; lon: number } | und
   if (lat === 0 && lon === 0) return undefined;
   if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return undefined;
   return { lat, lon };
+}
+
+/** Default image descriptions some cameras write; they are not captions. */
+const CAMERA_PLACEHOLDERS = new Set(
+  [
+    "OLYMPUS DIGITAL CAMERA",
+    "SONY DSC",
+    "DIGITAL CAMERA",
+    "KONICA MINOLTA DIGITAL CAMERA",
+    "MINOLTA DIGITAL CAMERA",
+    "LEICA DIGITAL CAMERA",
+    "Exif_JPEG_PICTURE",
+  ].map((text) => text.toLowerCase()),
+);
+
+/**
+ * Title and caption from the metadata (SPEC section 8.6), without camera placeholders and
+ * texts that only repeat the camera make or model.
+ */
+export function toTexts(metadata: RawMetadata): { title?: string; caption?: string } {
+  const ignored = new Set(
+    [metadata.make, metadata.model, ...CAMERA_PLACEHOLDERS]
+      .filter((text) => text !== undefined)
+      .map((text) => text.toLowerCase()),
+  );
+  const clean = (text: string | undefined) => {
+    const normalized = text?.replace(/\r\n?/g, "\n").trim().normalize("NFC");
+    return normalized && !ignored.has(normalized.toLowerCase()) ? normalized : undefined;
+  };
+  const title = clean(metadata.title);
+  const caption = clean(metadata.caption);
+  return {
+    ...(title !== undefined && { title }),
+    ...(caption !== undefined && caption !== title && { caption }),
+  };
 }

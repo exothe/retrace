@@ -166,6 +166,8 @@ function toMedia(p: ProcessedMedia, zone: string, position: Position | undefined
     ...(position && {
       gps: { lat: round(position.lat, 6), lon: round(position.lon, 6), source: position.source },
     }),
+    ...(p.item.title !== undefined && { title: p.item.title }),
+    ...(p.item.caption !== undefined && { caption: p.item.caption }),
   };
   return p.type === "photo"
     ? { ...base, type: "photo", thumb: at("thumb"), display: at("display") }

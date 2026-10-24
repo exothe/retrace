@@ -86,6 +86,10 @@ export interface MediaBase {
   /** Dominant color, "#rrggbb" */
   color?: string;
   gps?: { lat: number; lon: number; source: GpsSource };
+  /** From the file's metadata (XMP, IPTC or EXIF), plain text */
+  title?: string;
+  /** From the file's metadata, plain text; omitted when equal to the title */
+  caption?: string;
 }
 
 export interface Photo extends MediaBase {

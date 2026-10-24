@@ -141,8 +141,12 @@ describe("assembleTrip", () => {
     ]);
   });
 
-  it("writes media records with relative paths, local times and GPS", () => {
-    const p = photo("2026-10-23T09:15:12.250", { gps: { lat: 38.71140049, lon: -9.13049987 } });
+  it("writes media records with relative paths, local times, GPS, title and caption", () => {
+    const p = photo("2026-10-23T09:15:12.250", {
+      gps: { lat: 38.71140049, lon: -9.13049987 },
+      title: "Alfama",
+      caption: "Blick vom Miradouro",
+    });
     const v = video("2026-10-23T10:00:00");
     const trip = assemble(NOTES, [p, v], p.item.id);
     expect(trip.media[p.item.id]).toEqual({
@@ -154,6 +158,8 @@ describe("assembleTrip", () => {
       height: 1440,
       color: "#102030",
       gps: { lat: 38.7114, lon: -9.1305, source: "exif" },
+      title: "Alfama",
+      caption: "Blick vom Miradouro",
       thumb: `media/${p.item.id}-thumb.avif`,
       display: `media/${p.item.id}-display.avif`,
     });
@@ -164,6 +170,7 @@ describe("assembleTrip", () => {
       posterThumb: `media/${v.item.id}-poster-thumb.avif`,
       durationSeconds: 3.4,
     });
+    expect(trip.media[v.item.id]).not.toHaveProperty("title");
     expect(trip.cover).toBe(p.item.id);
     expect(trip.days[0]!.mapMediaIds).toEqual([p.item.id]);
     expect(trip).toMatchObject({

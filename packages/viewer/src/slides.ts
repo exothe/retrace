@@ -6,11 +6,16 @@ import { tripUrl } from "./data.ts";
 import { mediaAlt } from "./media.ts";
 import { strings } from "./strings.ts";
 
-/** A lightbox slide; the caption is the local time plus the text of the item's entry. */
+/**
+ * A lightbox slide; the caption is the local time plus the item's own title and caption from its
+ * metadata, or, if it has neither, the text of the item's entry.
+ */
 export function toSlide(slug: string, media: Media, entry: Entry | undefined): Slide {
+  const ownText = [media.title, media.caption].filter((text) => text !== undefined).join("\n");
+  const description = ownText || entry?.text;
   const caption = {
     title: `${media.localTime} ${strings.timeSuffix}`,
-    ...(entry && { description: entry.text }),
+    ...(description !== undefined && { description }),
   };
   if (media.type === "video") {
     return {

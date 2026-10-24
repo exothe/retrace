@@ -258,10 +258,12 @@ In order of priority:
 - Output files are content-addressed: `media/<hash12>-thumb.avif`, `media/<hash12>-display.avif`, `media/<hash12>.mp4`, `media/<hash12>-poster-thumb.avif`, `media/<hash12>-poster.avif`, where `<hash12>` is the first 12 hex characters of the content hash.
 - Files are copied from the cache into `trips/<slug>/media/`. Afterwards, delete files in that folder that the current trip no longer references.
 
-### 8.6 GPS from media
+### 8.6 GPS, title and caption from media
 
 - Read `GPSLatitude` / `GPSLongitude` from photos and the equivalent QuickTime GPS tags from videos (exiftool exposes them as `GPSLatitude` / `GPSLongitude` or `GPSCoordinates`).
 - Ignore `0,0` coordinates.
+- Title: the first present of XMP `Title`, IPTC `ObjectName`, EXIF `XPTitle`. Caption: the first present of XMP `Description`, IPTC `Caption-Abstract`, EXIF `ImageDescription`. These are what photo management apps (Lightroom, Apple Photos, digiKam) write.
+- Both are trimmed plain text. Ignore known camera placeholders (e.g. `OLYMPUS DIGITAL CAMERA`, `SONY DSC`) and texts equal to the camera make or model. A caption equal to the title is dropped.
 
 ### 8.7 Tracks
 
@@ -368,6 +370,8 @@ export interface MediaBase {
   height: number;
   color?: string;                    // dominant color, "#rrggbb"
   gps?: { lat: number; lon: number; source: "exif" | "track" };
+  title?: string;                    // from metadata (section 8.6), plain text
+  caption?: string;                  // from metadata, omitted when equal to the title
 }
 
 export interface Photo extends MediaBase {
@@ -452,7 +456,7 @@ For each day: date and weekday, the first one or two entry texts as a preview, a
 - Opens on tapping any thumbnail or map pin. Swipes and arrow keys move through **all media of the day** in chronological order.
 - Photos and videos zoom up to 10× with the mouse wheel (or pinch or double-tap on touch screens); dragging pans a zoomed item.
 - Videos play inline with controls (`yet-another-react-lightbox` video plugin) and use the poster.
-- The caption shows the local time, plus the text of the entry the item belongs to.
+- The caption shows the local time, plus the item's own title and caption from its metadata (section 8.6, each on its own line). If it has neither, it shows the text of the entry the item belongs to instead.
 - The URL updates to the deep link route (section 10.2) and closing returns to the day route, so the browser back button closes the lightbox.
 
 ## 11. Deployment (document in the README)

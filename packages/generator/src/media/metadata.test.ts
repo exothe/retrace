@@ -26,6 +26,9 @@ describe("toRawMetadata", () => {
         "Composite:GPSLatitude": "38.71",
         "Composite:GPSLongitude": -9.13,
         "EXIF:Make": "",
+        "IPTC:ObjectName": "Alfama",
+        "XMP:Description": " Blick vom Miradouro ",
+        "EXIF:ImageDescription": "OLYMPUS DIGITAL CAMERA",
       }),
     ).toEqual({
       dateTimeOriginal: "2026:10:23 09:15:12",
@@ -33,6 +36,8 @@ describe("toRawMetadata", () => {
       model: "Pixel 8",
       gpsLatitude: 38.71,
       gpsLongitude: -9.13,
+      title: "Alfama",
+      caption: "Blick vom Miradouro",
     });
   });
 
@@ -98,6 +103,28 @@ describe("createMetadataReader (real exiftool)", () => {
     const plain = await writeJxl(path.join(dir, "b.JXL"), tags, false);
     expect(await reader.read(compressed, "photo")).toEqual(expected);
     expect(await reader.read(plain, "photo")).toEqual(expected);
+  });
+
+  it("reads title and caption from XMP, falling back to IPTC and EXIF", async () => {
+    const { dir } = await tempDir();
+    const xmp = await writePhoto(path.join(dir, "a.jpg"), {
+      Title: "Größte Brücke",
+      Description: "Ponte 25 de Abril",
+      ObjectName: "IPTC title",
+      ImageDescription: "EXIF caption",
+    });
+    expect(await reader.read(xmp, "photo")).toEqual({
+      title: "Größte Brücke",
+      caption: "Ponte 25 de Abril",
+    });
+    const fallback = await writePhoto(path.join(dir, "b.jpg"), {
+      ObjectName: "Alfama",
+      ImageDescription: "Blick vom Miradouro",
+    });
+    expect(await reader.read(fallback, "photo")).toEqual({
+      title: "Alfama",
+      caption: "Blick vom Miradouro",
+    });
   });
 
   it("returns an empty result for a photo without metadata", async () => {
