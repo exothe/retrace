@@ -258,6 +258,10 @@ server {
 
 Both servers support range requests for static files out of the box, which video seeking needs.
 
+Images are AVIF files and must be served as `image/avif`. Caddy does this by default. Older
+nginx versions lack the type: if `curl -I http://raspberrypi.local/trips/<trip>/media/<file>.avif`
+shows `application/octet-stream`, add `image/avif avif;` to `/etc/nginx/mime.types`.
+
 To serve the site under a sub-path instead (e.g. `http://raspberrypi/retrace/`), copy it into
 that folder and adjust the paths in the regex; the site itself needs no changes.
 

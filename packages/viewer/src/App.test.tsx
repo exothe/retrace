@@ -48,7 +48,7 @@ describe("trip list", () => {
     expect(within(link).getByText("22.–24. Oktober 2026")).toBeTruthy();
     expect(within(link).getByText("3 Tage · 3 Fotos · 1 Video")).toBeTruthy();
     expect(link.querySelector("img")?.getAttribute("src")).toBe(
-      "./trips/lissabon-2026/media/p2-thumb.webp",
+      "./trips/lissabon-2026/media/p2-thumb.avif",
     );
   });
 
@@ -177,7 +177,7 @@ describe("lightbox", () => {
     expect(within(dialog).getByText("10:00 Uhr")).toBeTruthy();
     expect(within(dialog).getAllByText("Raus in die <b>Stadt</b>").length).toBeGreaterThan(0);
     expect(dialog.querySelector("video")?.getAttribute("poster")).toBe(
-      "./trips/lissabon-2026/media/v1-poster.webp",
+      "./trips/lissabon-2026/media/v1-poster.avif",
     );
   });
 

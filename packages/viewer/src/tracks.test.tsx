@@ -92,7 +92,7 @@ describe("pinsFor", () => {
         lat: 38.7114,
         lon: -9.1305,
         label: "Foto um 09:15 Uhr",
-        thumb: "./trips/lissabon-2026/media/p2-thumb.webp",
+        thumb: "./trips/lissabon-2026/media/p2-thumb.avif",
         isVideo: false,
         color: "#336699",
       },
@@ -101,7 +101,7 @@ describe("pinsFor", () => {
         lat: 38.7,
         lon: -9.1,
         label: "Video um 10:00 Uhr, 1:15",
-        thumb: "./trips/lissabon-2026/media/v1-poster-thumb.webp",
+        thumb: "./trips/lissabon-2026/media/v1-poster-thumb.avif",
         isVideo: true,
       },
     ]);

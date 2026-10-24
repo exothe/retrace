@@ -85,7 +85,7 @@ export async function processMedia(
       return {
         item,
         type: "photo" as const,
-        files: { thumb: path.join(dir, "thumb.webp"), display: path.join(dir, "display.webp") },
+        files: { thumb: path.join(dir, "thumb.avif"), display: path.join(dir, "display.avif") },
         info,
       };
     } catch (error) {
@@ -127,8 +127,8 @@ export async function processMedia(
         type: "video" as const,
         files: {
           video: videoFile,
-          poster: path.join(poster.dir, "poster.webp"),
-          posterThumb: path.join(poster.dir, "poster-thumb.webp"),
+          poster: path.join(poster.dir, "poster.avif"),
+          posterThumb: path.join(poster.dir, "poster-thumb.avif"),
         },
         // The poster has the video's dimensions; the video's are authoritative.
         info: { ...poster.info, ...video.info },

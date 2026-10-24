@@ -7,7 +7,7 @@ import type { Plugin } from "vite";
 
 const CONTENT_TYPES: Record<string, string> = {
   ".json": "application/json; charset=utf-8",
-  ".webp": "image/webp",
+  ".avif": "image/avif",
   ".mp4": "video/mp4",
 };
 

@@ -159,7 +159,7 @@ One JSON file per trip (strict JSON: no comments, no trailing commas), e.g. `tri
   "cover": "IMG_20261023_091512.jpg",
   "cameraOffsets": { "Canon EOS R6": "-00:02:30" },
   "videoTimesAreUtc": true,
-  "images": { "thumbWidth": 400, "displayWidth": 1920, "quality": 75 },
+  "images": { "thumbWidth": 400, "displayWidth": 1920, "quality": 50 },
   "videos": { "maxShortSide": 720, "crf": 28, "preset": "medium", "audioBitrate": "128k" },
   "tracks_options": { "simplifyToleranceMeters": 5, "geotagToleranceMinutes": 2 }
 }
@@ -181,7 +181,7 @@ One JSON file per trip (strict JSON: no comments, no trailing commas), e.g. `tri
 | `videoTimesAreUtc` | no | `true` | Section 7.2 |
 | `images.thumbWidth` | no | 400 | |
 | `images.displayWidth` | no | 1920 | The longest side is limited, for portrait images |
-| `images.quality` | no | 75 | WebP quality |
+| `images.quality` | no | 50 | AVIF quality |
 | `videos.maxShortSide` | no | 720 | The shorter side is limited (works for portrait videos) |
 | `videos.crf` | no | 28 | libx264 |
 | `videos.preset` | no | `medium` | |
@@ -240,19 +240,19 @@ In order of priority:
 ### 8.3 Images
 
 - Auto-rotate according to EXIF orientation (`sharp().rotate()`), then strip all metadata from the output (sharp's default).
-- Output a thumbnail (width `thumbWidth`) and a display version (longest side `displayWidth`) as WebP at `quality`. Never upscale.
+- Output a thumbnail (width `thumbWidth`) and a display version (longest side `displayWidth`) as AVIF at `quality`. Never upscale.
 - Record the output dimensions and a dominant color (via `sharp().stats()`) as a placeholder background.
 
 ### 8.4 Videos
 
 - Use `ffprobe` for duration, dimensions and rotation.
 - Transcode to H.264 (`libx264`, `yuv420p`) with AAC audio, scaling so the shorter side is at most `maxShortSide` (never upscale, keep even dimensions). Use `crf`, `preset` and `audioBitrate` from the config, add `-movflags +faststart`, and strip metadata (`-map_metadata -1`).
-- Make a poster frame at 1 s (or the first frame for shorter videos), saved as a WebP thumbnail and display image using the image settings.
+- Make a poster frame at 1 s (or the first frame for shorter videos), saved as an AVIF thumbnail and display image using the image settings.
 - Run images in parallel (CPU count) and videos at most 2 at a time.
 
 ### 8.5 Output media
 
-- Output files are content-addressed: `media/<hash12>-thumb.webp`, `media/<hash12>-display.webp`, `media/<hash12>.mp4`, `media/<hash12>-poster-thumb.webp`, `media/<hash12>-poster.webp`, where `<hash12>` is the first 12 hex characters of the content hash.
+- Output files are content-addressed: `media/<hash12>-thumb.avif`, `media/<hash12>-display.avif`, `media/<hash12>.mp4`, `media/<hash12>-poster-thumb.avif`, `media/<hash12>-poster.avif`, where `<hash12>` is the first 12 hex characters of the content hash.
 - Files are copied from the cache into `trips/<slug>/media/`. Afterwards, delete files in that folder that the current trip no longer references.
 
 ### 8.6 GPS from media

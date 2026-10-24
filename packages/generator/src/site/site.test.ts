@@ -47,9 +47,9 @@ describe("writeTripFolder", () => {
   it("copies media from the cache, removes stale files and skips unchanged ones", async () => {
     const { dir, write } = await tempDir();
     const site = path.join(dir, "site");
-    const thumb = await write("cache/thumb.webp", "T");
-    const display = await write("cache/display.webp", "D");
-    const stale = await write("site/trips/t/media/old000000000-thumb.webp", "old");
+    const thumb = await write("cache/thumb.avif", "T");
+    const display = await write("cache/display.avif", "D");
+    const stale = await write("site/trips/t/media/old000000000-thumb.avif", "old");
     const processed = [
       { item: { id: "abc123def456" }, type: "photo", files: { thumb, display } },
     ] as unknown as ProcessedMedia[];
@@ -57,8 +57,8 @@ describe("writeTripFolder", () => {
     const first = await writeTripFolder(site, trip("t", "2026-10-23"), processed);
     expect(first).toEqual({ copied: 2, removed: 1, tripJsonWritten: true });
     expect((await readdir(path.join(site, "trips/t/media"))).sort()).toEqual([
-      "abc123def456-display.webp",
-      "abc123def456-thumb.webp",
+      "abc123def456-display.avif",
+      "abc123def456-thumb.avif",
     ]);
     await expect(stat(stale)).rejects.toThrow();
 
@@ -73,7 +73,7 @@ describe("writeTripFolder", () => {
     const later = new Date(Date.now() + 5000);
     await utimes(thumb, later, later);
     expect((await writeTripFolder(site, trip("t", "2026-10-23"), processed)).copied).toBe(1);
-    expect(await readFile(path.join(site, "trips/t/media/abc123def456-thumb.webp"), "utf8")).toBe(
+    expect(await readFile(path.join(site, "trips/t/media/abc123def456-thumb.avif"), "utf8")).toBe(
       "U",
     );
   });
@@ -119,8 +119,8 @@ describe("rebuildIndex", () => {
       width: 1,
       height: 1,
       color: "#123456",
-      thumb: "media/abc-thumb.webp",
-      display: "media/abc-display.webp",
+      thumb: "media/abc-thumb.avif",
+      display: "media/abc-display.avif",
     } as const;
     await write("trips/old/trip.json", JSON.stringify(trip("old", "2024-05-01")));
     await write(
@@ -146,8 +146,8 @@ describe("rebuildIndex", () => {
       photoCount: 1,
       videoCount: 0,
       cover: {
-        thumb: "trips/new/media/abc-thumb.webp",
-        display: "trips/new/media/abc-display.webp",
+        thumb: "trips/new/media/abc-thumb.avif",
+        display: "trips/new/media/abc-display.avif",
         color: "#123456",
       },
     });
@@ -175,16 +175,16 @@ describe("rebuildIndex", () => {
             width: 1,
             height: 1,
             src: "media/v.mp4",
-            poster: "media/v-poster.webp",
-            posterThumb: "media/v-poster-thumb.webp",
+            poster: "media/v-poster.avif",
+            posterThumb: "media/v-poster-thumb.avif",
             durationSeconds: 1,
           },
         },
       }),
     );
     expect(summary.cover).toEqual({
-      thumb: "trips/t/media/v-poster-thumb.webp",
-      display: "trips/t/media/v-poster.webp",
+      thumb: "trips/t/media/v-poster-thumb.avif",
+      display: "trips/t/media/v-poster.avif",
     });
     expect(summary.videoCount).toBe(1);
   });

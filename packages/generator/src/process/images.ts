@@ -4,7 +4,7 @@ import sharp from "sharp";
 import type { TripConfig } from "../config.ts";
 
 /** Bump when image processing changes, so cached outputs are regenerated. */
-export const IMAGE_VERSION = 1;
+export const IMAGE_VERSION = 2;
 
 export type ImageSettings = TripConfig["images"];
 
@@ -17,7 +17,7 @@ export interface ImageInfo {
 }
 
 /**
- * Writes `thumb.webp` (width `thumbWidth`) and `display.webp` (longest side `displayWidth`)
+ * Writes `thumb.avif` (width `thumbWidth`) and `display.avif` (longest side `displayWidth`)
  * into `dir` (SPEC section 8.3): auto-rotated by EXIF orientation, never upscaled, without
  * metadata (sharp strips it by default).
  */
@@ -25,10 +25,10 @@ export async function renderImage(
   input: string | Buffer,
   settings: ImageSettings,
   dir: string,
-  names = { thumb: "thumb.webp", display: "display.webp" },
+  names = { thumb: "thumb.avif", display: "display.avif" },
 ): Promise<ImageInfo> {
   const base = sharp(input, { failOn: "error" }).rotate();
-  const webp = { quality: settings.quality };
+  const avif = { quality: settings.quality };
 
   const display = await base
     .clone()
@@ -38,12 +38,12 @@ export async function renderImage(
       fit: "inside",
       withoutEnlargement: true,
     })
-    .webp(webp)
+    .avif(avif)
     .toBuffer({ resolveWithObject: true });
   const thumb = await base
     .clone()
     .resize({ width: settings.thumbWidth, withoutEnlargement: true })
-    .webp(webp)
+    .avif(avif)
     .toBuffer();
 
   await writeFile(path.join(dir, names.display), display.data);

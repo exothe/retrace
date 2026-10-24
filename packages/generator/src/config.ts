@@ -82,7 +82,7 @@ const schema = z.strictObject({
     .strictObject({
       thumbWidth: positiveInt.default(400),
       displayWidth: positiveInt.default(1920),
-      quality: z.int().min(1).max(100).default(75),
+      quality: z.int().min(1).max(100).default(50),
     })
     .prefault({}),
   videos: z

@@ -19,7 +19,7 @@ async function source(dir: string, width: number, height: number, tags = {}) {
 }
 
 describe("renderImage", () => {
-  it("writes WebP thumbnail and display versions within the size limits", async () => {
+  it("writes AVIF thumbnail and display versions within the size limits", async () => {
     const { dir } = await tempDir();
     const info = await renderImage(await source(dir, 80, 60), SETTINGS, dir);
     expect(info).toEqual({
@@ -27,15 +27,15 @@ describe("renderImage", () => {
       height: 30,
       color: expect.stringMatching(/^#[0-9a-f]{6}$/) as string,
     });
-    const thumb = await sharp(path.join(dir, "thumb.webp")).metadata();
-    expect([thumb.format, thumb.width, thumb.height]).toEqual(["webp", 20, 15]);
+    const thumb = await sharp(path.join(dir, "thumb.avif")).metadata();
+    expect([thumb.format, thumb.width, thumb.height]).toEqual(["heif", 20, 15]);
   });
 
   it("limits the longest side for portrait images and the width for thumbnails", async () => {
     const { dir } = await tempDir();
     const info = await renderImage(await source(dir, 60, 80), SETTINGS, dir);
     expect([info.width, info.height]).toEqual([30, 40]);
-    const thumb = await sharp(path.join(dir, "thumb.webp")).metadata();
+    const thumb = await sharp(path.join(dir, "thumb.avif")).metadata();
     expect([thumb.width, thumb.height]).toEqual([20, 27]);
   });
 
@@ -56,7 +56,7 @@ describe("renderImage", () => {
     const info = await renderImage(file, SETTINGS, dir);
     // writePhoto makes 64x48; orientation 6 turns it upright as 48x64.
     expect([info.width, info.height]).toEqual([30, 40]);
-    const meta = await sharp(path.join(dir, "display.webp")).metadata();
+    const meta = await sharp(path.join(dir, "display.avif")).metadata();
     expect(meta.exif).toBeUndefined();
     expect(meta.orientation).toBeUndefined();
   });

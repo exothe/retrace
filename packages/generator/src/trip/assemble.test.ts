@@ -20,7 +20,7 @@ function photo(local: string, extra: Partial<MediaItem> = {}): ProcessedMedia {
       ...extra,
     } as MediaItem,
     type: "photo",
-    files: { thumb: "/cache/t.webp", display: "/cache/d.webp" },
+    files: { thumb: "/cache/t.avif", display: "/cache/d.avif" },
     info: { width: 1920, height: 1440, color: "#102030" },
   };
 }
@@ -34,7 +34,7 @@ function video(local: string): ProcessedMedia {
       kind: "video",
     } as MediaItem,
     type: "video",
-    files: { video: "/c/v.mp4", poster: "/c/p.webp", posterThumb: "/c/pt.webp" },
+    files: { video: "/c/v.mp4", poster: "/c/p.avif", posterThumb: "/c/pt.avif" },
     info: { width: 640, height: 360, color: "#000000", durationSeconds: 3.4 },
   };
 }
@@ -154,14 +154,14 @@ describe("assembleTrip", () => {
       height: 1440,
       color: "#102030",
       gps: { lat: 38.7114, lon: -9.1305, source: "exif" },
-      thumb: `media/${p.item.id}-thumb.webp`,
-      display: `media/${p.item.id}-display.webp`,
+      thumb: `media/${p.item.id}-thumb.avif`,
+      display: `media/${p.item.id}-display.avif`,
     });
     expect(trip.media[v.item.id]).toMatchObject({
       type: "video",
       src: `media/${v.item.id}.mp4`,
-      poster: `media/${v.item.id}-poster.webp`,
-      posterThumb: `media/${v.item.id}-poster-thumb.webp`,
+      poster: `media/${v.item.id}-poster.avif`,
+      posterThumb: `media/${v.item.id}-poster-thumb.avif`,
       durationSeconds: 3.4,
     });
     expect(trip.cover).toBe(p.item.id);

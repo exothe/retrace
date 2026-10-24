@@ -29,8 +29,8 @@ export const MEDIA_DIR = "media";
 export function mediaFileNames(p: ProcessedMedia): Record<string, string> {
   const id = p.item.id;
   return p.type === "photo"
-    ? { thumb: `${id}-thumb.webp`, display: `${id}-display.webp` }
-    : { video: `${id}.mp4`, poster: `${id}-poster.webp`, posterThumb: `${id}-poster-thumb.webp` };
+    ? { thumb: `${id}-thumb.avif`, display: `${id}-display.avif` }
+    : { video: `${id}.mp4`, poster: `${id}-poster.avif`, posterThumb: `${id}-poster-thumb.avif` };
 }
 
 /**

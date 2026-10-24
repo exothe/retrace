@@ -8,8 +8,8 @@ const photo = (id: string, takenAt: string, localTime: string, gps?: Media["gps"
   width: 400,
   height: 300,
   color: "#336699",
-  thumb: `media/${id}-thumb.webp`,
-  display: `media/${id}-display.webp`,
+  thumb: `media/${id}-thumb.avif`,
+  display: `media/${id}-display.avif`,
   ...(gps && { gps }),
 });
 
@@ -94,8 +94,8 @@ export const TRIP: Trip = {
       width: 640,
       height: 360,
       src: "media/v1.mp4",
-      poster: "media/v1-poster.webp",
-      posterThumb: "media/v1-poster-thumb.webp",
+      poster: "media/v1-poster.avif",
+      posterThumb: "media/v1-poster-thumb.avif",
       durationSeconds: 75,
     },
   },
@@ -145,8 +145,8 @@ export const INDEX: TripIndex = {
       photoCount: 3,
       videoCount: 1,
       cover: {
-        thumb: "trips/lissabon-2026/media/p2-thumb.webp",
-        display: "trips/lissabon-2026/media/p2-display.webp",
+        thumb: "trips/lissabon-2026/media/p2-thumb.avif",
+        display: "trips/lissabon-2026/media/p2-display.avif",
         color: "#336699",
       },
     },

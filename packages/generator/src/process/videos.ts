@@ -8,7 +8,7 @@ import { runProcess } from "./run.ts";
 /** Bump when video transcoding changes, so cached outputs are regenerated. */
 export const VIDEO_VERSION = 1;
 /** Bump when poster extraction changes. */
-export const POSTER_VERSION = 1;
+export const POSTER_VERSION = 2;
 
 export type VideoSettings = TripConfig["videos"];
 
@@ -119,5 +119,5 @@ export async function extractPoster(
     "-",
   ]);
   if (stdout.length === 0) throw new Error(`no frame at ${at} s in ${path.basename(video)}`);
-  return renderImage(stdout, settings, dir, { thumb: "poster-thumb.webp", display: "poster.webp" });
+  return renderImage(stdout, settings, dir, { thumb: "poster-thumb.avif", display: "poster.avif" });
 }

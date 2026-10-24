@@ -56,7 +56,7 @@ describe("loadConfig", () => {
       ffprobePath: "ffprobe",
       cameraOffsets: {},
       videoTimesAreUtc: true,
-      images: { thumbWidth: 400, displayWidth: 1920, quality: 75 },
+      images: { thumbWidth: 400, displayWidth: 1920, quality: 50 },
       videos: { maxShortSide: 720, crf: 28, preset: "medium", audioBitrate: "128k" },
       trackOptions: { simplifyToleranceMeters: 5, geotagToleranceMinutes: 2 },
     });
