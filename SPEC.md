@@ -161,8 +161,7 @@ One JSON file per trip (strict JSON: no comments, no trailing commas), e.g. `tri
   "videoTimesAreUtc": true,
   "images": { "thumbWidth": 400, "displayWidth": 1920, "quality": 75 },
   "videos": { "maxShortSide": 720, "crf": 28, "preset": "medium", "audioBitrate": "128k" },
-  "tracks_options": { "simplifyToleranceMeters": 5, "geotagToleranceMinutes": 2 },
-  "privacyZones": [{ "lat": 48.1371, "lon": 11.5754, "radiusMeters": 500 }]
+  "tracks_options": { "simplifyToleranceMeters": 5, "geotagToleranceMinutes": 2 }
 }
 ```
 
@@ -189,7 +188,6 @@ One JSON file per trip (strict JSON: no comments, no trailing commas), e.g. `tri
 | `videos.audioBitrate` | no | `128k` | |
 | `tracks_options.simplifyToleranceMeters` | no | 5 | |
 | `tracks_options.geotagToleranceMinutes` | no | 2 | |
-| `privacyZones` | no | | List of `{ lat, lon, radiusMeters }` |
 
 The cache directory must never default to a location inside the notes folder, because the notes live in a synced Obsidian vault.
 
@@ -284,7 +282,6 @@ In order of priority:
 ### 8.9 Privacy
 
 - All metadata is stripped from output files (sections 8.3 and 8.4).
-- For each privacy zone: drop track points inside the zone (this naturally trims the start and end of tracks that begin near home), and remove the GPS position from media taken inside the zone (the media itself is still shown).
 - Original file names are not written to the output.
 
 ## 9. Output
@@ -463,7 +460,7 @@ For each day: date and weekday, the first one or two entry texts as a preview, a
 
 ## 12. Development and testing
 
-- Unit tests (Vitest) for: the note parser and all validation rules, midnight rollover, weekday matching, timestamp resolution (each source in section 7, including `PXL_` as UTC and camera offsets), day windows and entry assignment, semicircle conversion, simplification, geotag interpolation, and privacy zones.
+- Unit tests (Vitest) for: the note parser and all validation rules, midnight rollover, weekday matching, timestamp resolution (each source in section 7, including `PXL_` as UTC and camera offsets), day windows and entry assignment, semicircle conversion, simplification, and geotag interpolation.
 - `examples/` contains a small sample trip: a notes file exercising the format (including a rollover, a weekday, and a deliberately media-only date), and a script that **generates** test media rather than committing binaries: images made with `sharp`, EXIF timestamps and GPS written with `exiftool-vendored`, a few seconds of test video made with ffmpeg's `testsrc`, and a small FIT file written with the `@garmin/fitsdk` encoder. Generated files go to a git-ignored folder.
 - Test the end-to-end `build` on the sample trip, and check that a second run hits the cache and changes nothing.
 
@@ -476,7 +473,7 @@ Implement in this order and keep each milestone working and tested before moving
 3. Media discovery, metadata extraction and timestamp resolution, including the media-related warnings in `check`.
 4. Media processing with the cache; day and entry assignment; writing `trip.json` and `index.json`; the `build` and `index` commands.
 5. Viewer: trip list, day list, day timeline, lightbox with deep links.
-6. FIT tracks: parsing, stats, simplification, geotagging, privacy zones; track cards and the day map in the viewer.
+6. FIT tracks: parsing, stats, simplification, geotagging; track cards and the day map in the viewer.
 7. The `preview` command; README with setup (including installing ffmpeg on Windows and macOS) and deployment.
 
 ## 14. Future ideas (not v1)

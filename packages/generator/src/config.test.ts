@@ -59,7 +59,6 @@ describe("loadConfig", () => {
       images: { thumbWidth: 400, displayWidth: 1920, quality: 75 },
       videos: { maxShortSide: 720, crf: 28, preset: "medium", audioBitrate: "128k" },
       trackOptions: { simplifyToleranceMeters: 5, geotagToleranceMinutes: 2 },
-      privacyZones: [],
     });
   });
 
@@ -77,7 +76,6 @@ describe("loadConfig", () => {
         images: { thumbWidth: 300, quality: 80 },
         videos: { maxShortSide: 1080, crf: 23, preset: "slow", audioBitrate: "96k" },
         tracks_options: { simplifyToleranceMeters: 10 },
-        privacyZones: [{ lat: 48.1371, lon: 11.5754, radiusMeters: 500 }],
       }),
     );
     await mkdir(path.join(tripDir, "Tracks"));
@@ -95,7 +93,6 @@ describe("loadConfig", () => {
       images: { thumbWidth: 300, displayWidth: 1920, quality: 80 },
       videos: { maxShortSide: 1080, crf: 23, preset: "slow", audioBitrate: "96k" },
       trackOptions: { simplifyToleranceMeters: 10, geotagToleranceMinutes: 2 },
-      privacyZones: [{ lat: 48.1371, lon: 11.5754, radiusMeters: 500 }],
     });
   });
 
@@ -132,12 +129,13 @@ describe("loadConfig", () => {
       images: { quality: 101 },
       videos: { preset: "turbo" },
       cameraOffsets: { "Canon EOS R6": "2 minutes" },
-      privacyZones: [{ lat: 95, lon: 11, radiusMeters: 500 }],
+      media: ["./Fotos", " "],
     });
     const { file } = await setup(text);
     expect(messages((await loadConfig(file)).diagnostics)).toEqual([
       `${lineOf(text, '"slug"')}: error: slug: must only contain a-z, 0-9 and -`,
       `${lineOf(text, '"timezone"')}: error: timezone: must be an IANA timezone like Europe/Lisbon`,
+      `${lineOf(text, '" "')}: error: media[1]: must not be empty`,
       expect.stringMatching(
         new RegExp(`^${lineOf(text, '"quality"')}: error: images\\.quality: .*100`),
       ),
@@ -145,9 +143,6 @@ describe("loadConfig", () => {
         new RegExp(`^${lineOf(text, '"preset"')}: error: videos\\.preset: .*"medium"`),
       ),
       `${lineOf(text, '"Canon EOS R6"')}: error: cameraOffsets."Canon EOS R6": must be an offset like "-00:02:30"`,
-      expect.stringMatching(
-        new RegExp(`^${lineOf(text, '"lat"')}: error: privacyZones\\[0\\]\\.lat: .*90`),
-      ),
     ]);
   });
 
@@ -291,7 +286,7 @@ describe("parseOffset", () => {
 describe("formatKeyPath", () => {
   it("formats nested keys, indices and keys that need quoting", () => {
     expect(formatKeyPath(["images", "quality"])).toBe("images.quality");
-    expect(formatKeyPath(["privacyZones", 0, "lat"])).toBe("privacyZones[0].lat");
+    expect(formatKeyPath(["tracks_options", 0, "x"])).toBe("tracks_options[0].x");
     expect(formatKeyPath(["cameraOffsets", "Canon EOS R6"])).toBe('cameraOffsets."Canon EOS R6"');
   });
 });

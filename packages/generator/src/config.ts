@@ -28,13 +28,6 @@ export interface TripConfig {
   images: { thumbWidth: number; displayWidth: number; quality: number };
   videos: { maxShortSide: number; crf: number; preset: X264Preset; audioBitrate: string };
   trackOptions: { simplifyToleranceMeters: number; geotagToleranceMinutes: number };
-  privacyZones: PrivacyZone[];
-}
-
-export interface PrivacyZone {
-  lat: number;
-  lon: number;
-  radiusMeters: number;
 }
 
 export interface LoadConfigResult {
@@ -109,15 +102,6 @@ const schema = z.strictObject({
       geotagToleranceMinutes: z.number().nonnegative().default(2),
     })
     .prefault({}),
-  privacyZones: z
-    .array(
-      z.strictObject({
-        lat: z.number().min(-90).max(90),
-        lon: z.number().min(-180).max(180),
-        radiusMeters: z.number().positive(),
-      }),
-    )
-    .default([]),
 });
 
 type RawConfig = z.output<typeof schema>;
@@ -214,7 +198,6 @@ function resolveConfig(file: string, raw: RawConfig): TripConfig {
     images: raw.images,
     videos: raw.videos,
     trackOptions: raw.tracks_options,
-    privacyZones: raw.privacyZones,
   };
 }
 
