@@ -1,0 +1,24 @@
+{
+  "name": "generator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Retrace CLI: turns trip notes, media and GPS tracks into a static site",
+  "type": "module",
+  "bin": {
+    "retrace": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "node src/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "15.0.0"
+  },
+  "devDependencies": {
+    "@retrace/shared": "0.1.0"
+  }
+}

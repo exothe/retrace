@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* Dark mode uses Tailwind's default `dark:` variant, which follows prefers-color-scheme. */
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  body {
+    @apply bg-white text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
+  }
+}

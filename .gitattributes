@@ -1,0 +1,3 @@
+* text=auto eol=lf
+# Test fixtures that deliberately use CRLF line endings
+*.crlf.md text eol=crlf

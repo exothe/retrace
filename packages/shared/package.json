@@ -1,0 +1,16 @@
+{
+  "name": "@retrace/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Types for the trip.json / index.json data schema shared by generator and viewer",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+
+# Generated sample media and build output (see examples/README.md)
+examples/generated/
+examples/site/
