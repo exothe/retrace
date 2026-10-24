@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -179,6 +179,15 @@ describe("lightbox", () => {
     expect(dialog.querySelector("video")?.getAttribute("poster")).toBe(
       "./trips/lissabon-2026/media/v1-poster.webp",
     );
+  });
+
+  it("ignores the click that ends a drag on a video, so it doesn't toggle playback", async () => {
+    renderAt("/lissabon-2026/2026-10-23/v1");
+    const video = (await screen.findByRole("dialog")).querySelector("video")!;
+    fireEvent.pointerDown(video, { clientX: 100, clientY: 100 });
+    expect(fireEvent.click(video, { clientX: 160, clientY: 120 })).toBe(false);
+    fireEvent.pointerDown(video, { clientX: 100, clientY: 100 });
+    expect(fireEvent.click(video, { clientX: 101, clientY: 100 })).toBe(true);
   });
 
   it("closes a deep-linked lightbox to the day route", async () => {

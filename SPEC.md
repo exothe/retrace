@@ -447,6 +447,7 @@ For each day: date and weekday, the first one or two entry texts as a preview, a
 ### 10.6 Lightbox
 
 - Opens on tapping any thumbnail or map pin. Swipes and arrow keys move through **all media of the day** in chronological order.
+- Photos and videos zoom up to 10× with the mouse wheel (or pinch or double-tap on touch screens); dragging pans a zoomed item.
 - Videos play inline with controls (`yet-another-react-lightbox` video plugin) and use the poster.
 - The caption shows the local time, plus the text of the entry the item belongs to.
 - The URL updates to the deep link route (section 10.2) and closing returns to the day route, so the browser back button closes the lightbox.

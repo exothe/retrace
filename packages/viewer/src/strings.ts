@@ -31,6 +31,9 @@ export const strings = {
   beforeFirstEntry: "Vor dem ersten Eintrag",
   noMediaYet: "Keine Fotos oder Videos",
 
+  zoomIn: "Vergrößern",
+  zoomOut: "Verkleinern",
+
   dayMap: "Karte des Tages",
   showMap: "Karte anzeigen",
   hideMap: "Karte ausblenden",
