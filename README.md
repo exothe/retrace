@@ -65,4 +65,14 @@ failures such as a missing ffmpeg.
 
 Try it on the sample trip, see [examples/README.md](examples/README.md).
 
+## Viewer development
+
+```sh
+npm run dev -w viewer      # Vite dev server with hot reload
+```
+
+The dev server serves `trips/` from `examples/site` (build the sample trip first, see
+[examples/README.md](examples/README.md)), or from another site directory set in
+`RETRACE_SITE=/path/to/site`.
+
 Setup, usage and deployment docs will be completed in milestone 7.

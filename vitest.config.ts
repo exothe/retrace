@@ -15,7 +15,14 @@ export default defineConfig({
         test: { name: "generator", root: "packages/generator", include: ["src/**/*.test.ts"] },
       },
       {
-        test: { name: "viewer", root: "packages/viewer", include: ["src/**/*.test.{ts,tsx}"] },
+        test: {
+          name: "viewer",
+          root: "packages/viewer",
+          include: ["src/**/*.test.{ts,tsx}"],
+          environment: "jsdom",
+          setupFiles: ["src/test/setup.ts"],
+          css: true,
+        },
       },
     ],
   },
